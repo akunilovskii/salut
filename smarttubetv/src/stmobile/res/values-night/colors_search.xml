@@ -1,0 +1,4 @@
+<resources>
+    <color name="mobile_search_field">#272727</color>
+    <color name="mobile_search_ripple">#20FFFFFF</color>
+</resources>

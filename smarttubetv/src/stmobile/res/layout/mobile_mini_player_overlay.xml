@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Floating live-video card used when an in-app player is minimized over a detail screen. -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_mini_player"
+    android:contentDescription="@string/mobile_mini_expand"
+    android:layout_width="@dimen/mobile_mini_player_width"
+    android:layout_height="@dimen/mobile_mini_player_height"
+    android:layout_gravity="bottom|end"
+    android:layout_marginEnd="8dp"
+    android:layout_marginBottom="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:visibility="gone"
+    app:cardBackgroundColor="@android:color/black"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="8dp"
+    tools:visibility="visible">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- NEWTUBE(issue #9): an AspectRatioFrameLayout (FIT), given the video's shape by
+             MiniPlayerBridge.fitToVideo: other shapes are letterboxed, not stretched. -->
+        <androidx.media3.ui.AspectRatioFrameLayout
+            android:id="@+id/mobile_mini_player_frame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center">
+
+            <ImageView
+                android:id="@+id/mobile_mini_freeze"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                android:scaleType="fitXY"
+                android:visibility="gone" />
+
+        </androidx.media3.ui.AspectRatioFrameLayout>
+
+        <include layout="@layout/mobile_mini_player_controls" />
+
+        <ProgressBar
+            android:id="@+id/mobile_mini_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:max="1000"
+            android:progressBackgroundTint="@color/mobile_color_progress_track"
+            android:progressTint="@color/mobile_color_progress"
+            tools:progress="400" />
+
+    </FrameLayout>
+
+</com.google.android.material.card.MaterialCardView>

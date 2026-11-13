@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One search suggestion/history row (vertical list, replaces the old chip strip).
+  Icon = clock while browsing history (empty query) / magnifier for typed suggestions.
+  The trailing NW arrow inserts the text into the field without submitting.
+  Long-press = remove-entry / clear-history dialog (SearchPresenter.onTagLongClicked).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/suggestion_root"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingEnd="0dp">
+
+    <ImageView
+        android:id="@+id/suggestion_icon"
+        android:layout_width="48dp"
+        android:layout_height="24dp"
+        android:paddingHorizontal="12dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_mobile_search" />
+
+    <TextView
+        android:id="@+id/suggestion_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp"
+        android:fontFamily="sans-serif"
+        android:includeFontPadding="false"
+        android:lineHeight="20sp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:textColor="@color/mobile_color_on_surface"
+        android:textSize="16sp"
+        tools:text="mr bean full episodes" />
+
+    <ImageButton
+        android:id="@+id/suggestion_insert"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_toolbar_touch"
+        android:contentDescription="@string/mobile_search_insert"
+        android:padding="12dp"
+        android:src="@drawable/ic_mobile_arrow_insert" />
+
+</LinearLayout>

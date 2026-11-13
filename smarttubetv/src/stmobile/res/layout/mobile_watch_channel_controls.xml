@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mobile_watch_channel_controls"
+    android:layout_width="wrap_content"
+    android:layout_height="48dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/mobile_watch_avatar"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_toolbar_touch"
+        android:contentDescription="@string/open_channel"
+        android:padding="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_watch_channel_placeholder" />
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="48dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/mobile_watch_subscribe"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:backgroundTint="@color/mobile_color_inverse_surface"
+            android:fontFamily="sans-serif"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:insetTop="8dp"
+            android:insetBottom="8dp"
+            android:letterSpacing="0"
+            android:minWidth="0dp"
+            android:minHeight="48dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="0dp"
+            android:text="@string/mobile_watch_subscribe"
+            android:textAllCaps="false"
+            android:textColor="@color/mobile_color_on_inverse_surface"
+            android:textSize="12sp"
+            android:textStyle="normal"
+            app:cornerRadius="16dp" />
+
+        <LinearLayout
+            android:id="@+id/mobile_watch_notifications"
+            android:layout_width="56dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_watch_notifications"
+            android:clickable="true"
+            android:contentDescription="@string/header_notifications"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="11dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/mobile_watch_notification_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_watch_bell" />
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginStart="4dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_watch_expand" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

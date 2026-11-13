@@ -1,0 +1,455 @@
+{
+  "schemaVersion": 1,
+  "features": [
+    {
+      "id": "github-public-releases",
+      "behavior": "Public source and releases use akunilovskii/salut only. Private history and retained signing material stay in salut_private. Source export flattens reviewed dependency sources and omits keys, private instructions and local state. Release builds preserve the existing package and certificate, use increasing versions and enable the existing GitHub update flow with its existing global About preference and hourly automatic check. Downloads and installation require user action. Debug development builds retain disabled automatic checks. Version tags trigger tests, signed APK builds, identity verification and release publication. Older private builds need one manual update.",
+      "files": [
+        ".github/workflows/release.yml",
+        "personal/release.json",
+        "tools/export_public_source.py",
+        "tools/verify_release.py",
+        "tools/update_manifest.py",
+        "common/src/main/res/values/update_urls.xml",
+        "smarttubetv/build.gradle"
+      ],
+      "tests": [
+        "PublicReleaseTest",
+        "AutoUpdateCheckTest"
+      ],
+      "checks": [
+        "Clean public source builds without private submodule access or signing key",
+        "No key or private history is published",
+        "Release APKs retain package and certificate and are not debuggable",
+        "GitHub release assets and update manifest are accessible anonymously",
+        "Phone update preserves account and settings; manual check uses Salut feed"
+      ]
+    },
+    {
+      "id": "phone-quality-reload-and-hls",
+      "behavior": "Adapted NewTube PR #128 reload/engine-restoration fixes and PR #137 quality selection. Settings defaults persist separately from player-sheet per-video overrides. Temporary quality/audio choices survive same-video reloads and clear on different videos. Saved default presets remain adaptive ceilings so small-window caps remain effective. Explicit player choices select a matching or supported lower quality; Auto remains adaptive. HLS reused IDs must also match resolution, codec and frame-rate class. Track/source refreshes retain the intended target, clear stale overrides and retain an orientation-independent ceiling when no track matches. Global speed, original-language audio selection, background video disabling, viewport caps, personal controls and bounded error recovery are preserved. The conflicting permanent-pick and no-recovery policies from #128 and the fixed-default policy from #137 are excluded. No new preference store, background job or network API is added.",
+      "files": [
+        "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/VideoStateController.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/player/Media3PlayerController.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/player/Media3TrackAdapter.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/PlayerPages.java"
+      ],
+      "tests": [
+        "VideoStateControllerTempFormatTest",
+        "VideoStateControllerPreviousTest",
+        "VideoStateControllerPositionTest",
+        "Media3TrackAdapterVideoTest",
+        "Media3TrackAdapterAudioTest",
+        "ViewportCappedTrackSelectionTest",
+        "VideoRungTest",
+        "GeneralSettingsTest"
+      ],
+      "checks": [
+        "Same-video reload retains the choice; another video restores its saved default",
+        "Engine initialization honors temporary video format first",
+        "Reused HLS IDs and lower-resolution fallback select the intended track",
+        "Auto removes fixed video overrides",
+        "Speed, audio language, background audio and viewport behavior remain covered"
+      ]
+    },
+    {
+      "id": "phone-repository-links",
+      "behavior": "Phone Source code and the GitHub repository action use https://github.com/akunilovskii/salut through one shared resource value. The repository currently requires authorized GitHub access. Upstream licence attribution and the disabled upstream updater remain unchanged.",
+      "files": [
+        "smarttubetv/src/stmobile/res/values/strings_mobile.xml"
+      ],
+      "tests": [
+        "GeneralSettingsTest"
+      ],
+      "checks": [
+        "Both repository actions resolve to the personal repository",
+        "The licence retains the original upstream source"
+      ]
+    },
+    {
+      "id": "phone-default-youtube-links",
+      "behavior": "Settings > General > Open YouTube links and the optional first-launch offer open a manual guide. It explains releasing ownership in YouTube Android settings, then assigning all four web hosts to Salut using Add link. The user makes every system change. The guide refreshes its progress on resume; Check setup reports each host. No app-side domain setter, shell workaround, permission request or additional persistent setting is used. YouTube absence is handled without a broken button. Existing web routes, custom schemes, shared-text routing and TV behavior remain unchanged.",
+      "files": [
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/YouTubeLinkSetup.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileActivity.java",
+        "smarttubetv/src/stmobile/AndroidManifest.xml",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/LinkSettingsPage.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/SettingsPages.java"
+      ],
+      "tests": [
+        "GeneralSettingsTest",
+        "YouTubeLinkSetupTest"
+      ],
+      "checks": [
+        "Both steps open the correct package in Android settings",
+        "A read-only progress count and host list report incomplete setup",
+        "No defaults are changed by Salut",
+        "Dismissing the first-launch offer does not repeat in the same install/update"
+      ]
+    },
+    {
+      "id": "phone-cover-download",
+      "behavior": "The main phone video menu places Summarize with AI third and Download cover fourth after Play next and Save to playlist when these actions are available. Download cover uses an image/download icon and is not duplicated inside More. The original JPEG is saved to the default Downloads directory, without resizing. The extension URL scheme tries maxresdefault.jpg first, then sddefault.jpg and hqdefault.jpg for unavailable sizes or placeholders. Filenames retain readable Unicode, sanitize unsafe characters and include the video ID. Android 10+ publishes through MediaStore only after completion; duplicate taps are suppressed. Older Android delegates to DownloadManager and is not yet device-validated. No new preference or account data is stored.",
+      "files": [
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/downloads/CoverDownload.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/dialog/PhoneVideoMenu.java",
+        "smarttubetv/src/stmobile/res/drawable/ic_menu_download_cover.xml"
+      ],
+      "tests": [
+        "CoverDownloadTest",
+        "PhoneVideoMenuTest"
+      ],
+      "checks": [
+        "Cover is the fourth main menu action with an icon",
+        "Invalid video IDs cannot form download URLs",
+        "The largest available JPEG is retained without resizing",
+        "The Pixel 10 saved a 1280 x 720 JPEG into Downloads",
+        "Failures do not publish a partial file or claim success"
+      ]
+    },
+    {
+      "id": "phone-channel-notification-delivery",
+      "status": "requires-web-authorization",
+      "behavior": "Phone bell selection reflects confirmed YouTube modes instead of local likes/RSS membership. Preference changes require separate web authorization, omit re-subscription, update state after success and serialize with account/channel subscription writes. An unavailable session produces an explicit requirement before an unsupported request is sent. Android notification delivery is prepared via a 15-minute WorkManager inbox poll plus foreground/account/permission checks. First synchronization is silent; account-specific persisted video IDs deduplicate delivery, recent checks avoid duplicate reads, notification taps use the existing video router and account changes remove stale notices. The current TV OAuth login cannot authorize the web inbox or web preference endpoints; additional web authorization remains required and full live delivery is not yet verified. Browser cookies are not currently imported or persisted. TV behavior and the Subscriptions red dot remain separate.",
+      "files": [
+        "MediaServiceCore",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/notifications/ChannelNotificationWorker.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/notifications/ChannelVideoNotifications.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/notifications/NotificationSeenStore.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/WatchSubscriptionControl.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/MobileMainApplication.java"
+      ],
+      "tests": [
+        "PhoneNotificationPreferenceTest",
+        "NotificationSeenStoreTest",
+        "WatchSubscriptionControlTest"
+      ],
+      "checks": [
+        "Failed writes preserve the selected server mode",
+        "A successful preference request does not re-subscribe",
+        "Missing web authorization sends no unsupported API request",
+        "All inbox sections are parsed",
+        "Initial synchronization is silent and later video IDs are deduplicated across reloads",
+        "Account baselines are separate",
+        "A compatible web session and live server round-trip are still required for complete delivery"
+      ]
+    },
+    {
+      "id": "phone-feedback-channel-navigation",
+      "behavior": "Phone transient messages from shared services, menus, audio controls and player actions use MobileSnackbar with the same navigation-or-safe-bottom baseline, 16 dp side margins and 12 dp bottom gap. Mini-player position does not move notices. Comparable icon actions use a shared bounded 40 dp circular highlight; adjacent feed actions, toolbar actions and player options use 40 dp horizontal slots with 48 dp height and unchanged 24 dp glyphs. Back, close, comment and cast-device actions reuse the bounded feedback. Filled transport controls and subscription capsules retain their own geometry. Existing durations, Undo and Sign in remain available. Background messages retain the system Toast fallback; TV remains unchanged. Channel pin status is resolved from the current account's stored channel ID rather than card/reload tokens and toggling removes the stored shortcut. Channel toolbar title opacity maps linearly to the final tab-height interval before pinning, from hidden before that interval to fully visible when tabs pin. A stationary gesture preserves intermediate opacity and reverse scrolling uses the same positions, without a timed animator. Opening a video from a phone channel tab hands the currently displayed list to the existing visible-next queue. Only following videos appear in the tab's current order. Explicit Play next keeps priority, matching source continuations append without repeats, unrelated recommendation rows do not mix in, and an exhausted source stays empty. Real playlist destinations keep their existing queue behavior. No new preferences or persistent source snapshots are added.",
+      "files": [
+        "SharedModules",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileSnackbar.java",
+        "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/dialogs/menu/BaseMenuPresenter.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/ChannelTitleFade.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/ChannelPlaybackLaunch.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"
+      ],
+      "tests": ["MobileSnackbarTest", "ChannelPinTest", "ChannelTitleFadeTest", "VisibleNextQueueTest"],
+      "checks": [
+        "Shared messages and quick notices share the bottom anchor with a visible mini-player",
+        "Background messages retain a native Toast without recursion",
+        "Pin and Unpin resolve the same channel from different card tokens",
+        "Title opacity tracks the final header scroll interval, remains fixed while scrolling stops and reverses at the same positions", "Compact icon highlights meet without overlapping hit regions", "The channel capsule bottom aligns with counts; More aligns with the name and Pin is only a menu action",
+        "Launching B from A,B,C,D yields C,D and preserves explicit Play next priority",
+        "Only matching source continuations append without consumed videos",
+        "Launching the last channel video keeps recommendations out"
+      ]
+    },
+    {
+      "id": "shared-channel-subscription-state",
+      "behavior": "The player, phone video menu and channel header consume one runtime account/channel state. Keys use account ID, email and brand-page identity, not display name. Missing state is unknown. Confirmed metadata, actual subscription-feed responses and successful provider actions publish state. Revision checks prevent late reads or old feeds from undoing newer actions. Concurrent reads and duplicate writes are coalesced; conflicting writes are rejected while one is active. Membership and public profile freshness are five minutes in memory; explicit refresh bypasses freshness while retaining visible state. Account switches reject stale callbacks. Public profiles are cached independently by channel and locale and reused by About/links. Notification selection is snapshotted independently of mutable provider tokens, using confirmed server selection on the phone without local notification-group overrides; remote changes require compatible web authorization. TV retains its existing subscription UI flow.",
+      "files": ["MediaServiceCore", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/data/Video.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/PlayerUIController.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/dialogs/menu/VideoMenuPresenter.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/WatchSubscriptionControl.java"],
+      "tests": ["ChannelStateStoreTest", "WatchSubscriptionControlTest", "ChannelHeaderLayoutTest", "ChannelDetailsPageTest"],
+      "checks": ["Unknown, subscribed and unsubscribed remain distinct", "Account/channel keys isolate cached state and events", "A pending read cannot overwrite a newer successful action", "Parallel screens share one request even after one detaches", "Failed requests can retry", "Subscription feeds refresh membership without inventing absent-channel negatives", "Five-minute expiry retains the previous visible snapshot", "Notification changes retain confirmed selection and do not prolong membership freshness", "Copying a Video preserves subscription metadata and account ownership"]
+    },
+    {
+      "id": "shared-phone-modal-theme",
+      "behavior": "Phone modals use a page-colored surface without an elevation overlay, neutral sentence-case secondary actions and a contrasting filled primary action. Dark, light and pure-black preferences remain supported. The default Material theme covers AI, channel details, settings and confirmations, while a phone-registered factory applies the same native Material builder to shared playlist/password/proxy edit dialogs. Existing confirmation semantics and TV builders remain intact; Android system dialogs keep system styling.",
+      "files": ["smarttubetv/src/stmobile/res/values/styles_mobile.xml", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/utils/AppAlertDialog.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/MobileMainApplication.java"],
+      "tests": ["MobileThemeTest", "AiShareTargetStoreTest"],
+      "checks": ["Dark modals retain the dark surface instead of elevation grey", "Light modals use a white surface and dark secondary actions", "Primary and secondary buttons are neutral and disabled states remain distinguishable", "AI instruction and buttons fit a narrow viewport", "Shared edits retain validation, password input and confirmation behavior"]
+    },
+    {
+      "id": "compact-video-menu-ai-summary",
+      "behavior": "Phone video menus show enabled Play next, Save to playlist, Summarize with AI, Download cover, Share, Open channel and Not interested actions before More. Icons accompany actions. Other enabled actions retain their existing callbacks inside More; New playlist is not duplicated when Save to playlist is available. AI summary prepares an editable summary instruction without a requested response language, title, clean URL and original spoken-language captions, preferring author captions over ASR and excluding translations and auto-dub transcripts. Ambiguous original language yields no transcript. Missing subtitles and truncation beyond 120,000 characters are disclosed. A compatible installed text-sharing destination is selected without sending. Its name replaces Choose app and is changeable. Send is text-only without a background or press highlight in both states. It is disabled with muted text without a valid destination; active text uses the theme ink and opens the prepared request in that app. The component is remembered device-wide across accounts and restarts; removed or unavailable targets require reselection. The user submits the chat message in the assistant. Copy request is removed. A visibility setting is enabled once on upgrade. TV menus retain their existing presentation.",
+      "files": ["MediaServiceCore", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/dialog/AiShareTargetStore.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/dialog/PhoneVideoMenu.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/dialog/AiVideoShare.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/dialog/DialogRowAdapter.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/dialogs/menu/VideoMenuPresenter.java"],
+      "tests": ["PhoneVideoMenuTest", "AiVideoShareTest", "AiShareTargetStoreTest", "OriginalSubtitleSelectorTest"],
+      "checks": ["Primary menu preserves enabled actions and their callbacks", "More retains uncommon and extension actions", "New playlist remains accessible through Save or independently when Save is hidden", "AI instruction is editable and does not prescribe a response language", "App selection preserves edits and never sends text", "Send opens an explicit selected destination and selection survives reopening", "Unavailable destinations are cleared and disable Send", "Original captions exclude translations and auto-dub transcripts; ambiguous source language is not guessed", "Missing and shortened transcripts are disclosed", "Transcript parsing preserves mathematical symbols and decoded XML text"]
+    },
+    {
+      "id": "channel-profile-header-and-pin",
+      "behavior": "Phone engine metadata callbacks run on the main thread and reject a replaced view or video so speed restoration cannot interrupt watch-header delivery. Watch and channel headers reuse public avatar URLs and the same Glide memory image, preserve portraits through empty same-channel updates, clear them on channel changes, and use the existing profile loader when watch metadata omits the avatar. Phone channel pages show available public banner, avatar, title, verification (a 20 dp filled circular check placed 8 dp after the name and aligned to its first-line capitals), handle, subscriber/video counts, description and external links. Description opens an About page in the existing channel stack, containing the full description, links and available channel URL, country, joined date and total views. Back retains the tab, feed and scroll. The mini-player remains above the page and its height is reserved in scroll padding. The header places only More at the right of the name and the subscription action at the right of subscriber/video counts, above the description. The small link summary shows a chain icon, the first address and the number of remaining links. More and subscription targets overlay the compact identity rows without enlarging them. The subscription capsule bottom aligns to the bottom of the counts line. Pin is the first action in the channel More menu and reflects the current account state; there is no standalone Pin control. The More glyph aligns with the top of the first name line and its feedback meets the content edge. Name, handle and counts retain their left alignment with 4 dp text-row gaps, while the banner, description and link use compact 8 dp gaps; right-side text ellipsis leaves room for the controls. It opens an inset bottom sheet with service icons, names and addresses. Short lists wrap their content without blank viewport space; the complete sheet is capped at 60% of screen height and long lists scroll internally. Channel subscription controls use a 68 x 40 dp visible capsule, 24 dp bell and 16 dp chevron; watch controls use a 56 x 32 dp capsule, 18 dp bell and 12 dp chevron. Both subscription controls retain 48 dp touch height, hidden Subscribed text and existing shared state/actions. Subscription and notification actions reuse the shared account/channel state and existing notification sheet. Subscribed state shows only a compact bell/chevron; unknown state never presents a false Subscribe button. Header scrolling preserves channel tabs, pagination and Shorts filtering. Missing profile fields remain absent and profile failure does not remove videos. Pin is a local account-specific shortcut in You > Pinned, independent of YouTube subscription. Pin and Unpin work from channel context, including before Browse initializes. Channel More shortcuts omit repeated known destinations while retaining unique tabs, separate Live/Past live streams and distinct same-named endpoints; an empty More tab is hidden.",
+      "files": [
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/ChannelAvatar.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java",
+        "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java","MediaServiceCore", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/ChannelDetailsPage.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/ChannelHeaderController.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/ChannelHeaderLayout.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelActivity.java", "smarttubetv/src/stmobile/res/layout/mobile_channel_header.xml", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/dialogs/menu/BaseMenuPresenter.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/BrowsePresenter.java"],
+      "tests": ["ChannelAvatarTest", "SuggestionsControllerReopenTest", "ChannelProfileParserTest", "ChannelHeaderLayoutTest", "ChannelDetailsPageTest", "ChannelPinTest", "WatchSubscriptionControlTest"],
+      "checks": ["Modern and legacy profile fields are parsed without invented counts", "External links accept only HTTP or HTTPS and are deduplicated", "Channel More retains the existing Pin callback and places it first without duplicate actions", "Header actions fit 320 dp and normal phone widths with 40 dp compact action width and 48 dp height", "Subscription metadata belongs to the current channel and account", "Unknown state does not flash Subscribe and subscribed state has no word label", "About shows full facts and returns without rebuilding the feed", "Link rows retain an icon and name/address on narrow screens", "The first-link summary counts only additional links", "Short link sheets have no blank viewport and long ones scroll within a 60% screen cap", "More aligns with the name and subscription aligns with counts at narrow and regular widths; Pin is first in More with the current state", "Mini-player and accessibility state are restored on About close", "Existing channel sections and Shorts filtering remain available", "Pin can be reversed from the same context without a Browse view"]
+    },
+    {
+      "id": "video-tap-pause",
+      "behavior": "A single tap that reveals the phone player's controls also pauses playback after the single tap is confirmed. Controls appear immediately; double-tap seeking never pauses. Already-paused video does not resume on a surface tap, and tapping empty visible overlay space only hides it. The existing Play button resumes playback. Swipes, pinch, fullscreen/minimize gestures and temporary hold speed retain their behavior. Deferred pauses cannot affect another video or survive leaving the player or a subsequent Play action. Accessibility clicks pause without a gesture timeout. Applies to portrait and fullscreen, with no new preference or mini-player/PiP behavior change.",
+      "files": ["doubletapplayerview-media3/src/main/java/com/github/vkay94/dtpv3/DoubleTapPlayerViewImpl.kt", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PlayerTapPause.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"],
+      "tests": ["PlayerTapPauseTest", "SwipeLevelsTest", "PlayerTransportAppearanceTest"],
+      "checks": ["Single tap reveals controls immediately and then pauses", "Double-tap seeking, swipes, pinch cancellation and hold speed do not pause", "Paused video and empty-overlay taps never resume playback", "A later video, lifecycle change or Play action cannot receive a deferred pause", "Portrait and fullscreen use the same tap behavior"]
+    },
+    {
+      "id": "recommendations-by-source",
+      "behavior": "The phone's existing Hide Up next switch is labeled Recommendations by source and retains its saved value. When enabled, YouTube recommendations are allowed for Home, search and external video links, and hidden for curated lists, History, Subscriptions and channels. Recommendation hops, explicit queue interruptions and engine reloads retain the viewing context. Opening a different source replaces it. Source lists, collapsible playlist cards, Play next priority and child-mode restrictions remain intact. Disabling the switch restores recommendations for all sources; TV keeps its existing global hide behavior.",
+      "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java", "smarttubetv/src/stmobile/res/values/strings_settings.xml", "smarttubetv/src/stmobile/res/values-es/strings_settings.xml", "smarttubetv/src/stmobile/res/values-ru/strings_settings.xml", "smarttubetv/src/stmobile/res/values/strings_settings_search.xml"],
+      "tests": ["ContextualSuggestionsTest", "SubscriptionsQueueTest", "SuggestionsControllerReopenTest", "VisibleNextQueueTest"],
+      "checks": ["With the existing switch enabled, Home, search and external links show recommendations", "Curated sources keep their own list without YouTube recommendations", "Recommendation transitions and queue interruptions retain source context", "Reopening the same video from another source updates recommendation visibility", "Child mode and explicit Play next retain their existing priority", "Turning the switch off permits recommendations for all sources"]
+    },
+    {
+      "id": "global-speed-shortcut",
+      "behavior": "The player speed button replaces the captions shortcut. Tap toggles 1x and the last chosen non-default speed shared across videos and channels. Without a remembered custom speed, tap opens the existing picker; long press always opens it. Phone speed memory uses the existing global preference, with no channel/video memory mode. Captions remain in the player settings menu and temporary hold speed does not change the remembered choice. The entire speed icon, including its needle, is red (#FF0033) at non-default speed and white at 1x. Its visible contour height matches Cast without changing the touch target.",
+      "files": ["smarttubetv/src/stmobile/res/drawable/ic_player_speed.xml", "smarttubetv/src/stmobile/res/color/mobile_player_speed_contour.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PlayerSpeedButton.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/PhoneOnlyPrefs.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/PlayerPages.java", "smarttubetv/src/stmobile/res/layout/activity_mobile_playback.xml"],
+      "tests": ["PlayerSpeedButtonTest", "PhoneSpeedPrefsTest"],
+      "checks": ["Tap restores the last custom speed and toggles back to 1x", "Long press opens the existing speed picker", "Different channels share speed memory across app restarts", "Captions remain accessible in player settings", "Portrait and fullscreen keep the existing control geometry", "The entire speed icon turns red at non-default speed and white at 1x", "Speed and Cast have equal visible icon heights"]
+    },
+    {
+      "id": "explicit-play-next-priority",
+      "behavior": "Play next and explicitly queued videos override the visible following list, even when it is exhausted. After the queue finishes, playback resumes the retained source list. A queued video already in the visible list is removed once without skipping preceding rows.",
+      "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"],
+      "tests": ["SubscriptionsQueueTest", "VisibleNextQueueTest"],
+      "checks": ["Play next from a video menu while another video plays takes effect for Next and autoplay", "After the requested video, playback resumes the original following list", "Moving a visible video next does not repeat it or skip earlier rows", "Play next works after the retained source list ends"]
+    },
+    {
+      "id": "watch-channel-strip",
+      "behavior": "One fixed portrait strip contains the 32 dp channel avatar, Subscribe or bell/chevron, then Like, Dislike, Save, Share and Download in 41 dp action slots without icon backgrounds or touch highlights. A 22 dp Save glyph balances the other 20 dp glyphs. Save and Download move to the existing player menu on narrow screens; the strip never scrolls. Like counts and optional dislike counts move into metadata, which keeps channel identity and view details. Subscribe uses regular 12 sp type and a 32 dp visible pill. Subscribed channels show the current notification mode and a bottom sheet with the provider's three choices and Unsubscribe. The sheet has an 8 dp side/bottom margin, a #212121 dark surface, 48 dp icon rows and a check on the selected mode, without YouTube's explanatory text or help link. Asynchronous changes reject duplicate requests and stale video/account/menu callbacks, retain the prior choice on errors and use confirmed server notification metadata and the phone web-session provider, with an explicit web sign-in requirement when unavailable; subscriber counts remain on the channel page.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/WatchSubscriptionControl.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/WatchMetadataLine.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/res/layout/mobile_watch_channel_controls.xml", "smarttubetv/src/stmobile/res/layout/mobile_watch_actions.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_playback.xml", "smarttubetv/src/stmobile/res/layout/sheet_watch_notifications.xml", "smarttubetv/src/stmobile/res/layout/item_watch_notification_choice.xml", "smarttubetv/src/stmobile/res/layout/item_watch_notification_unsubscribe.xml", "smarttubetv/src/stmobile/res/drawable/ic_watch_bell.xml", "smarttubetv/src/stmobile/res/drawable/ic_watch_bell_all.xml", "smarttubetv/src/stmobile/res/drawable/ic_watch_bell_off.xml", "smarttubetv/src/stmobile/res/drawable/ic_watch_unsubscribe.xml", "smarttubetv/src/stmobile/res/drawable/bg_watch_notifications.xml", "smarttubetv/src/stmobile/res/drawable/bg_watch_notification_sheet.xml"],
+      "tests": ["WatchActionsLayoutTest", "WatchSubscriptionControlTest", "WatchMetadataLineTest"],
+      "checks": ["Portrait has one fixed channel/action strip in the approved order", "41 dp action centers and icon sizes match the Pixel reference without icon backgrounds", "Subscribe size and subscribed bell match the Pixel reference", "Notification sheet matches the Pixel reference geometry, uses actual metadata choices and keeps Unsubscribe", "Pending or stale notification choices cannot update another video/account", "Like and optional dislike counts appear in metadata while view details remain reachable", "Save and Download remain in the player menu on narrow screens"]
+    },
+    {
+      "id": "watch-icon-actions",
+      "behavior": "Like, Dislike, Share and Download use centered 20 dp glyphs; Save uses 22 dp to match their visible weight. Their 41 dp slots have no visible text, backgrounds or touch highlights and fit a fixed strip on Pixel 10. Like and opt-in dislike counts appear in metadata instead of button pills. Saved/downloaded glyphs retain state feedback, and action names plus saved/download state remain accessible. Related content and loading placeholders have no Up next heading or reserved heading space; offline messaging remains available.",
+      "files": ["smarttubetv/src/stmobile/res/layout/mobile_watch_actions.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_playback.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/WatchMetadataLine.java", "smarttubetv/src/stmobile/res/values/strings_mobile.xml", "smarttubetv/src/stmobile/res/values-ru/strings_mobile.xml"],
+      "tests": ["WatchActionsLayoutTest", "WatchMetadataLineTest"],
+      "checks": ["Action icons fit without scrolling or pill backgrounds", "Icon centers match 41 dp spacing and Save appears as large as neighboring actions", "Like and optional dislike counts retain their visibility settings in metadata", "Download and save states remain distinguishable and accessible", "Related content loads without an Up next heading or blank reserved row"]
+    },
+    {
+      "id": "portrait-watch-header",
+      "behavior": "The portrait title and views/date line form one compact description action with 12 dp side insets, 16 dp top padding and 4 dp bottom padding. The metadata row has a 4 dp top inset and 24 dp chevron. Title styling remains 18 sp medium with a three-line limit; metadata uses regular 12 sp and expands to wrap with the description. Taps anywhere in the header toggle the existing inline description, with empty descriptions remaining collapsed. The header has one accessibility description action and at least a 48 dp touch height.",
+      "files": ["smarttubetv/src/stmobile/res/layout/mobile_watch_header.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_playback.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"],
+      "tests": ["WatchHeaderTest"],
+      "checks": ["A one-line header matches the measured YouTube height at Pixel density and font scale", "Title, metadata, chevron and padding all toggle the same description", "Long titles retain the three-line limit", "Expanded metadata wraps without covering the chevron", "Larger text grows the header without clipping"]
+    },
+    {
+      "id": "feed-card-alignment",
+      "behavior": "Standard feed thumbnails fill their column without horizontal outer insets. Metadata uses 12 dp side insets, regular 12 sp type, the width up to the overflow action and up to two lines before truncation; 36 dp avatars align with the title's top and precede it by 8 dp. Avatar vertical position stays fixed when titles wrap or shrink. Text starts at 12 dp when avatars are hidden. Title styling and existing action sizes, colors and spacing are retained. Multi-column feeds keep equal 16 dp gutters with flush outer edges, including full-span headers, rotation and RTL. Loading placeholders share the horizontal alignment. Compact Watch later rows retain their own layout.",
+      "files": ["smarttubetv/src/stmobile/res/layout/item_video_card.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/FeedCardSpacing.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/search/MobileSearchActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelUploadsActivity.java", "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_search.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_channel.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_channel_uploads.xml", "smarttubetv/src/stmobile/res/layout/mobile_feed_skeleton.xml"],
+      "tests": ["FeedCardLayoutTest", "VideoCardActionAppearanceTest", "WatchLaterDragAdapterTest"],
+      "checks": ["Portrait thumbnails reach both feed edges", "Home and Subscriptions avatars start at 12 dp and titles at 56 dp", "Cards without avatars start text at 12 dp", "Metadata can extend to the overflow button without covering the clock icon", "Grid columns retain 16 dp gutters after headers and rotation", "Watch later and overflow actions retain their behavior", "Compact Watch later rows remain unchanged"]
+    },
+    {
+      "id": "search-interface",
+      "behavior": "Phone search uses the measured YouTube rounded glyphs, 40 dp field, 16 sp text and suggestion spacing. Editing wraps up to six visible lines; results retain the beginning with end ellipsis. Tapping the result query resumes editing. Clear is inside the field; voice search and suggestion insertion retain their actions. Browse toolbar and Back feedback are bounded 48 dp circles inside the existing touch targets; clear feedback fits its 40 dp field.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/search", "smarttubetv/src/stmobile/res/layout/mobile_search_toolbar.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_search.xml", "smarttubetv/src/stmobile/res/layout/item_mobile_search_suggestion.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml", "smarttubetv/src/stmobile/res/drawable/bg_toolbar_touch.xml", "smarttubetv/src/stmobile/res/drawable/bg_search_back_touch.xml", "smarttubetv/src/stmobile/res/values/styles_mobile.xml"],
+      "tests": ["SearchToolbarTest", "MobileSearchSubmitTest", "BrowseToolbarLayoutTest"],
+      "checks": ["Portrait and landscape editing and results retain readable query alignment", "Keyboard Search and hardware Enter submit once without a newline", "Clear and suggestion insertion retain editing behavior", "Back returns from editing to existing results", "Toolbar feedback stays inside each control and selected Switch feedback remains bounded", "Install retains app data, package and signing identity"]
+    },
+    {
+      "id": "personal-build-identity",
+      "behavior": "NewTube label, io.github.aleixrodriala.arc.debug package, retained signing identity, upstream in-app updates disabled and Windows build tooling. The Gradle wrapper JAR and offline test fixture are downloaded with SHA-256 verification into ignored build/ directories; APKs and reproducible binaries are not tracked.",
+      "files": ["smarttubetv/build.gradle", "smarttubetv/src/debug/AndroidManifest.xml", "build.gradle", "sabr-media3/build.gradle", "personal/tools/Build.ps1", "personal/tools/Ensure-GradleWrapper.ps1", "personal/tools/Ensure-TestFixture.ps1", "gradlew", "gradlew.bat"],
+      "checks": ["APK signature equals personal/manifest.json", "Package and label unchanged", "Install over the existing app preserves data", "Gradle launchers fetch and verify the wrapper JAR without tracking it", "Build script fetches and verifies the test fixture without tracking it"]
+    },
+    {
+      "id": "switch-audio",
+      "behavior": "Settings > General > Show Switch button is enabled by default, saved globally in the existing Switch preference store, and controls both browse and player buttons. Disabling it disconnects the Switch route and restores phone audio while retaining receiver and volume settings. Re-enabling only restores controls; late permission results cannot activate a hidden route. One-tap audio routing before Cast on browse and player screens; blue/red Joy-Cons when selected. A long press and hardware volume keys open the same nearly full-width Switch/Cast volume slider, with enlarged controls, red progress, live percentage and hardware-key updates, placed 8 physical pixels below the browse toolbar or player controls. New routes use full source level by default, saved levels remain persistent, and the media session binds to the remote provider when selected.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/audio", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackService.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/player", "smarttubetv/src/stmobile/res/layout/sheet_switch_volume.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/casting/RemoteVolumeOverlay.java", "smarttubetv/src/stmobile/res/layout/overlay_mobile_cast_volume.xml", "smarttubetv/src/stmobile/res/drawable/bg_mobile_cast_volume.xml", "smarttubetv/src/stmobile/res/values/strings_switch_audio.xml"],
+      "tests": ["GeneralSettingsTest", "SwitchAudioTest", "OpusPrerollRenderersFactoryTest"],
+      "checks": ["Pixel audio works while Switch is disabled", "Long press on either Switch button opens a synchronized volume slider", "Phone volume keys adjust the selected route", "Switch receiver and physical-volume test on the real console"]
+    },
+    {
+      "id": "mobile-snackbar-geometry",
+      "behavior": "Mobile confirmations use a warm surface with readable text, 16 dp side margins and a 12 dp bottom gap. Browse notices remain above navigation; watch-page notices remain inside the display and preserve their actions.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileSnackbar.java", "smarttubetv/src/stmobile/res/values/colors_mobile.xml", "smarttubetv/src/stmobile/res/values-night/colors_mobile.xml"],
+      "tests": ["MobileSnackbarTest"],
+      "checks": ["Watch later addition confirmation fits inside the display with side margins", "The notice stays above navigation and Undo remains reachable", "Warm surface and text remain readable in dark and light themes"]
+    },
+    {
+      "id": "watch-later-navigation",
+      "behavior": "Watch later root section and other playlist pages share a non-scrolling half-height 32:9 mosaic of up to 20 video covers, a dimmed first-video backdrop and a 50% black layer over the mosaic. The title sits above owner/privacy and video count, while compact Play all and Shuffle buttons sit alongside the text. The round cover search button shares Shuffle's 44 dp size and right edge. Watch later retains both navigation bars without a playlist Back button; Downloads is under My videos in You; settings target the actual bottom-bar and You entries, with visibility shared across accounts. The Watch later icon changes from outline to filled when checked; label size, weight and theme tint stay unchanged.",
+      "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/BrowsePresenter.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/service/SidebarService.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelUploadsActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/PlaylistHeaderAdapter.java", "smarttubetv/src/stmobile/res/layout/item_mobile_playlist_header.xml", "smarttubetv/src/stmobile/res/values/dimens_mobile.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/AppPages.java"],
+      "tests": ["SidebarServiceWatchLaterTest", "SidebarServiceNotificationsTest"],
+      "checks": ["Watch later and regular playlists show up to 20 covers in the half-height 32:9 area without scrolling", "The dimmed backdrop follows the first video and updates when the list changes", "Privacy/owner and count sit under the title while Play all and Shuffle sit to their right", "The controls fit narrow screens and localized labels", "Play all and Shuffle work", "Hide and re-enable Watch later across restart", "Downloads visibility affects You", "Watch later has a filled selected clock and an outline unselected clock; selection survives recreation"]
+    },
+    {
+      "id": "playlist-compact-search",
+      "behavior": "Watch later and other playlist pages show compact full-width video rows. The shared playlist header opens its search field on the cover, immediately left of the search button, without growing the header. Search matches title, channel and metadata; active searches fetch remaining playlist pages so results are not limited to the first page. Search does not change playback order or permit Watch later drag and swipe actions against filtered positions.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/PlaylistHeaderAdapter.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/PlaylistSearch.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelUploadsActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/res/layout/item_mobile_playlist_header.xml"],
+      "checks": ["All playlist video rows use the Watch later layout in portrait and landscape", "Search finds title, channel and date text on later pages", "Closing search restores all rows", "Watch later drag and swipe are disabled while results are filtered"]
+    },
+    {
+      "id": "history-compact-selection",
+      "behavior": "History shows the shared compact video rows without Watch later drag handles. Its bottom-tab icon stays white and changes from a thin history arrow to a bold history arrow with clock hands when selected, distinct from the filled Watch later clock.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/VideoCardAdapter.java", "smarttubetv/src/stmobile/res/drawable/ic_nav_browse_history.xml", "smarttubetv/src/stmobile/res/drawable/ic_nav_browse_history_outline.xml", "smarttubetv/src/stmobile/res/drawable/ic_nav_browse_history_fill.xml"],
+      "checks": ["History rows show compact thumbnails and wrapped metadata without drag handles", "History icon visibly changes on selection and remains white"]
+    },
+    {
+      "id": "subscriptions-source-queue",
+      "behavior": "Subscriptions initially shows the source feed order in Up next, skipping Shorts/upcoming items. On mobile, Next and autoplay play from the visible following list and retain its remaining order across advances. Finish-playlist mode stops at its end. Other feeds initially show recommendations.",
+      "flag": "Existing section-playlist preference; no independent Subscriptions feature flag.",
+      "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/data/Video.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/VideoLoaderController.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"],
+      "tests": ["SubscriptionsQueueTest", "SuggestionsControllerReopenTest"],
+      "checks": ["Open a middle feed item and compare Up next with the feed", "Next and end-of-video transition use the same following item"]
+    },
+    {
+      "id": "visible-next-queue",
+      "behavior": "On the mobile watch page, Next and autoplay choose explicit queue items first, otherwise the first video shown below the current one. Advancing removes the played entry while retaining the remaining visible order instead of replacing it with suggestions for the new video. Explicit queue interruptions preserve the remaining source rows. Selecting a visible video preserves the rows after that selection; opening an unrelated video starts a fresh list.",
+      "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/views/PlaybackView.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/VideoLoaderController.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java"],
+      "tests": ["VisibleNextQueueTest"],
+      "checks": ["From History, Watch later and Subscriptions, Next plays the first visible following row", "The remaining rows retain their order after each advance", "An unrelated video open starts a new suggestions list"]
+    },
+    {
+      "id": "watch-later-compact-swipe",
+      "behavior": "Watch later reuses Up next compact rows. Left swipe removes a video, failure restores its row, and Undo restores it. Consecutive removals remain independent.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/VideoCardAdapter.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/WatchLaterSwipe.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/RelatedVideoAdapter.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/dialogs/menu/VideoMenuPresenter.java"],
+      "tests": ["PlaylistRemovalTest", "OwnPlaylistMatchTest"],
+      "checks": ["Portrait and landscape rows remain compact", "Playlist header cannot be swiped", "Swipe and Undo preserve the test playlist contents"]
+    },
+    {
+      "id": "compact-video-row-full-text",
+      "behavior": "The shared compact video row in Watch later, Up next and the playback queue shows up to two title lines with an ellipsis, while channel/views/date metadata wraps without truncation. The row grows to fit its metadata while retaining the fixed thumbnail and drag handle sizes.",
+      "files": ["smarttubetv/src/stmobile/res/layout/item_mobile_related_video.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/RelatedVideoAdapter.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/VideoCardAdapter.java"],
+      "checks": ["Long titles stop after two lines while metadata remains complete on narrow screens", "Watch later, Up next and the playback queue use the same row behavior", "Thumbnail and drag handle stay aligned as rows grow", "Drag reorder and swipe removal still work with wrapped rows"]
+    },
+    {
+      "id": "sponsorblock-channel-menu",
+      "behavior": "Expose the existing upstream exclude-channel action through the video-menu visibility preference. Channel exclusions and SponsorBlock enable/category settings remain upstream behavior and runtime phone preferences, not a separate custom skip engine.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/AppPages.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/MainUIData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/SponsorBlockData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/utils/AppDialogUtil.java"],
+      "checks": ["Enable the channel-exclusion item in video-menu settings", "Exclude and re-enable the chosen channel using the existing menu action", "Restore runtime settings separately after a fresh install"]
+    },
+    {
+      "id": "branding",
+      "behavior": "Wine-red launcher icon, NewTube application name, transparent play mark on the Android launch splash. Custom wine-red and navy icon variants are in personal/assets/; downloadable references are available from their recorded sources.",
+      "files": ["personal/assets", "smarttubetv/src/stmobile/res/drawable/ic_launcher_foreground.xml", "smarttubetv/src/stmobile/res/values/styles_mobile.xml"],
+      "checks": ["Launcher icon and label", "Cold launch without a white circle around the splash logo"]
+    },
+    {
+      "id": "player-transport-sizing",
+      "behavior": "The watch-page and fullscreen players match YouTube's transport geometry on Pixel 10: 56 dp Play/Pause inside an 80 dp touch container, 40 dp Previous/Next inside 48 dp touch containers, and 88 dp between button centers. Rounded glyphs retain the Play/Pause morph. Native touch delegates preserve outer-band taps and disabled states. Mini-player and notification Play/Pause icons remain separate.",
+      "files": ["smarttubetv/src/stmobile/res/layout/mobile_player_transport.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_playback.xml", "smarttubetv/src/stmobile/res/values/dimens_mobile.xml", "smarttubetv/src/stmobile/res/values/player_glyphs.xml", "smarttubetv/src/stmobile/res/drawable/mobile_player_center_button_bg.xml", "smarttubetv/src/stmobile/res/drawable/ic_player_transport_play.xml", "smarttubetv/src/stmobile/res/drawable/ic_player_transport_pause.xml", "smarttubetv/src/stmobile/res/drawable/ic_player_previous.xml", "smarttubetv/src/stmobile/res/drawable/ic_player_next.xml", "smarttubetv/src/stmobile/res/drawable/avd_player_play_to_pause.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PlayerTransportTouchTargets.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"],
+      "tests": ["PlayerTransportAppearanceTest"],
+      "checks": ["Visible button bounds match original YouTube in portrait and fullscreen", "Play and Pause remain functional and morph smoothly", "Taps outside visible circles activate the corresponding controls", "Gaps and disabled controls do not activate actions", "Returning from fullscreen retains the portrait geometry"]
+    },
+    {
+      "id": "mini-player-controls",
+      "behavior": "In-app mini-player Play/Pause is at the upper left and Close at the upper right. Both use 48 dp touch targets around inset 36 dp circles, 60% black scrims, rounded white glyphs and white press ripples measured against original YouTube. Browse and detail hosts share the layout and fractional-density padding. Close pauses playback immediately, then retires the session after the exit animation. A main-thread timeout guarantees teardown if the animation end callback is lost. A new video handed to the reused player cancels the old close and restores its previous playing state. Closing a paused video does not resume it. System PiP dismissal closes the underlying session even when a mini-player host owns the PiP surface. Both lifecycle callback orders and direct host destruction are handled; expanding retains playback and ordinary background audio is unchanged. Dragging behavior is unchanged.",
+      "files": [
+        "smarttubetv/src/stmobile/res/layout/mobile_mini_player_controls.xml",
+        "smarttubetv/src/stmobile/res/layout/mobile_mini_player_overlay.xml",
+        "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml",
+        "smarttubetv/src/stmobile/res/values/mini_player_controls.xml",
+        "smarttubetv/src/stmobile/res/drawable/ic_mini_play.xml",
+        "smarttubetv/src/stmobile/res/drawable/ic_mini_pause.xml",
+        "smarttubetv/src/stmobile/res/drawable/ic_mini_close.xml",
+        "smarttubetv/src/stmobile/res/drawable/bg_mini_scrim_circle.xml",
+        "smarttubetv/src/stmobile/res/drawable/bg_mini_scrim_circle_touch.xml",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniPlayerControls.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniPlayerClose.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniHostPip.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PipDismissal.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileActivity.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobileMiniPlayerController.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java"
+      ],
+      "tests": [
+        "MiniPlayerControlsTest",
+        "MiniPlayerCloseTest",
+        "PipDismissalTest",
+        "MiniCardDragTest"
+      ],
+      "checks": [
+        "Both hosts keep controls in the top corners in portrait and landscape",
+        "Touch, glyph, circle and pressed-feedback bounds match the measured reference within antialiasing",
+        "Invisible outer bands activate Play/Pause and Close without expanding the card",
+        "Dragging from a control does not trigger its action",
+        "Close stops audio immediately and removes the playback session even if its exit animation is cancelled",
+        "Opening a new video during close keeps the new session alive",
+        "Dismiss system PiP after minimizing then leaving Salut: session, audio and notification end",
+        "Expand system PiP back into Salut: playback continues"
+      ]
+    },
+    {
+      "id": "floating-mini-player",
+      "behavior": "The in-app video card drags in both axes and docks to the nearest of four corners measured from original YouTube. Side gaps are 8 dp; upper corners sit 8 dp below the Android status bar or display cutout without double-insetting already safe hosts, and can overlay app toolbars. Bottom corners sit flush above visible bottom navigation or 8 dp above the safe bottom edge without it. Browse, Search and channel hosts share the chosen corner across rotation. Tap expands, play/pause controls playback and X closes. The default 16:9 window matches original YouTube on Pixel 10 at 519x292 px in portrait and landscape; smaller windows adapt. Closing resets the next session to bottom-right. Android touch slop starts dragging. Release velocity uses screen coordinates; fast swipes with 40 dp axis travel and 600 dp/s axis speed choose the release direction, while slow/cancelled gestures choose the nearest corner. Docking follows the measured 500 ms small-overshoot transition and can be interrupted by touch.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniCardDrag.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniPlayerFling.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniPlayerPosition.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniPlayerSize.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniPlayerBridge.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobileMiniPlayerController.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/res/layout/mobile_mini_player_overlay.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml"],
+      "tests": ["MiniCardDragTest", "MiniPlayerFlingTest", "MiniPlayerPositionTest", "MiniPlayerSizeTest", "MinimizeBackdropTest", "PlayingReturnTest"],
+      "checks": ["Live video continues while moving the card", "Fast short swipes throw to the opposite corner while slow drags return", "Tiny and cancelled gestures do not cause unintended flings", "Docking duration and overshoot match the YouTube reference", "Dragging does not expand, pause or close", "Pause, expand and close controls work", "Tabs, Search, channel navigation and rotation retain the chosen corner", "Portrait and landscape window size matches original YouTube", "All four corner bounds match original YouTube in portrait and landscape", "Upper corners clear the Android status bar by 8 dp in browse and Search", "Bottom navigation has no gap; hosts without it use an 8 dp safe-area gap"]
+    },
+    {
+      "id": "system-pip-transport",
+      "behavior": "Android system PiP shows Previous, Play/Pause and Next in the same native arrangement as YouTube, with compact skip glyphs. Skip actions use the existing playback presenter and queue, including the existing Previous restart policy. Unavailable neighbors stay visible but disabled. Side-effect-free availability queries and video/next-target/play-state updates keep actions current. Commands have distinct immutable package-scoped PendingIntents and an internal receiver. Switching videos retains video-only PiP content. A visible mini-player host enters PiP on Home with the live session video and restores its docked card when the app returns. Android owns system-window movement; in-app hosts use only the shared corner-docking handler.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PipControls.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MiniHostPip.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileActivity.java", "smarttubetv/src/stmobile/res/drawable/ic_pip_previous.xml", "smarttubetv/src/stmobile/res/drawable/ic_pip_next.xml", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java"],
+      "tests": ["PipControlsTest", "SuggestionsAvailabilityTest"],
+      "checks": ["Native action order and icon sizes match original YouTube", "Play/Pause, Next and Previous work while remaining in PiP", "Unavailable neighbors are disabled and retain their slots", "Availability checks do not mutate queue state", "Video changes do not expose the regular player controls inside PiP", "Home with a docked video shows live system PiP and reopening restores the card", "All in-app hosts use one corner-docking handler without free-height state"]
+    },
+    {
+      "id": "shared-app-settings",
+      "behavior": "All phone app settings are shared across accounts and signed-out use. Navigation settings are separated from pinned content; local watch progress, channel groups, playlist state and account content remain separate. Pending setting writes are flushed before account changes. Settings > Advanced has no separate-settings-per-account switch; TV profile behavior is separate.",
+      "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/AppPrefs.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/SharedSettingsData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/GeneralData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/MainUIData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/PlayerData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/PlayerTweaksData.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/prefs/BlockedChannelData.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/MobileMainApplication.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/PlayerPages.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/SettingsSearch.java"],
+      "tests": ["SharedAppSettingsTest", "SidebarServiceWatchLaterTest", "SidebarServiceNotificationsTest"],
+      "checks": ["First launch preserves effective active settings", "Settings persist across two accounts, signed-out use and restart", "Watch later and Downloads visibility are shared", "Switching immediately does not lose a setting change", "Account-specific content and local state stay isolated", "Advanced settings and search omit the separate-account-settings option"]
+    },
+    {
+      "id": "direct-watch-later",
+      "behavior": "Clock buttons on Home, Subscriptions, channel feeds and search add videos to the active account. Clock and overflow actions share bounded 40 dp circular feedback and horizontal action slots, 48 dp touch height and touching highlight edges, and primary theme ink (white in dark, near-black in light). The overflow highlight meets the thumbnail/card right edge, preserving outer card margins. A translucent, non-blocking three-second notification offers Undo only for new additions. Existing memberships remain intact. Signed-out taps open the account picker; account changes cancel stale actions. Successful edits invalidate playlist caches.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/watchlater/WatchLaterAddition.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/WatchLaterQuickAdd.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/VideoCardAdapter.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/MobileChannelUploadsActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/search/MobileSearchActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileSnackbar.java", "smarttubetv/src/stmobile/res/layout/item_video_card.xml", "smarttubetv/src/stmobile/res/values/strings_mobile.xml"],
+      "tests": ["WatchLaterAdditionTest", "MobileSnackbarTest", "VideoCardActionAppearanceTest"],
+      "checks": ["Clock and existing menu remain separate actions", "Add and Undo affect the correct video and account", "Existing saved videos never receive destructive Undo", "Notification dismisses automatically after three seconds without blocking scrolling", "Clock remains readable in light/dark themes and portrait/landscape layouts", "Signed-out taps open the account picker"]
+    },
+    {
+      "id": "toolbar-home-you",
+      "behavior": "The Browse toolbar keeps Salut with its play logo left and Audio, Cast, Search, You right. Its Inkscape-outlined vector wordmark uses a lighter S with even visible letter gaps at the original toolbar size, while sub-screen titles keep normal spacing. The 48 dp bar fits 40 dp action slots and bounded 40 dp highlights, and the first video card has no extra top margin. The bar slides upward with feed scroll until hidden and slides back from the first reverse scroll. The fixed feed viewport avoids relayout flicker; the bar remains visible behind a translucent status scrim without clipping until it leaves the top edge. An opaque status band moves with the bar, matching YouTube #060606 above its #0F0F0F dark toolbar when fully shown; video shows through the scrim when hidden. Section changes restore the bar. Home is the second bottom destination in History, Home, Watch later, Subscriptions, Account when all feed tabs are enabled. Outline/filled selection, Back and re-tap behavior are preserved. Settings > Tabs places the shared Home visibility switch under Bottom bar and omits the non-configurable Top bar group and explanatory Subscriptions/account notes; You remains available in the top bar when shown. Holding a feed tab offers Hide and Settings; Account offers Settings only. Settings opens Tabs directly. Hide reuses shared visibility preferences without deleting contents, preserves an inactive destination, selects another visible tab when hiding the active one, and falls back to You when all feed tabs are hidden. Long presses neither cycle accounts nor acknowledge Subscriptions.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BottomTabMenu.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BrowseNavigation.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BrowseTopBar.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/AppPages.java", "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml", "smarttubetv/src/stmobile/res/drawable/ic_salut_toolbar_logo.xml", "smarttubetv/src/stmobile/res/drawable/bg_mobile_status_scrim.xml", "smarttubetv/src/stmobile/res/values/attrs_mobile.xml", "smarttubetv/src/stmobile/res/values/colors_mobile.xml", "smarttubetv/src/stmobile/res/values-night/colors_mobile.xml", "smarttubetv/src/stmobile/res/values/styles_mobile.xml", "smarttubetv/src/stmobile/res/values/strings_settings.xml", "smarttubetv/src/stmobile/res/drawable/bg_toolbar_update_badge.xml"],
+      "tests": ["BrowseNavigationTest", "BrowseToolbarLayoutTest", "NavigationTabsSettingsTest", "BottomTabMenuTest"],
+      "checks": ["Top-right order is Audio, Cast, Search, You with no Home button", "Bottom order is History, Home, Watch later, Subscriptions, Account when all feed tabs are enabled", "Downward feed travel slides the bar behind the translucent status area until hidden; reverse travel reveals it", "Slow scroll keeps the feed viewport stable", "Video shows through the translucent status area after the bar hides", "The shown dark status band is #060606, the toolbar is #0F0F0F, and reverse travel restores the opaque band", "Section changes restore the bar", "You selection clears bottom selection without changing the destination", "Home re-tap scrolls or refreshes and retains its selected icon", "You sub-page Back returns to You, then Home", "Home visibility is controlled under Bottom bar and remains shared across accounts", "Logo and wordmark fit narrow phones without overlapping the four toolbar buttons"]
+    },
+    {
+      "id": "toolbar-vector-wordmark",
+      "behavior": "Browse uses an editable Inkscape vector for the SaluT wordmark, scaled to 22 dp artwork height with a 31.5 dp icon. Google's logo contour supplies the icon; Oswald Regular outlines supply the slimmer letters, with close S-to-a and u-to-T gaps and uppercase final T. The icon retains its wine-red color.",
+      "files": ["personal/assets/salut-wordmark-source.svg", "personal/assets/salut-wordmark.svg", "personal/tools/ExportWordmark.ps1", "smarttubetv/src/stmobile/res/drawable/ic_salut_toolbar_logo.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BrowseTopBar.java"],
+      "checks": ["The play icon and letters scale together at 22 dp artwork height", "The logo fits beside Audio, Cast, Search and You", "Sub-screen titles still fit and show their back arrow"]
+    },
+    {
+      "id": "bottom-bar-fling",
+      "behavior": "Browse bottom navigation slides below the display on a quick upward feed fling and returns on a quick downward fling. Slow swipes preserve its current state; the 550 dp/s threshold lies between the measured 1200 and 1700 px/s YouTube cases on Pixel 10. The dark bar uses a #F5141414 scrim (96% opacity), with #F5FFFFFF in the light theme, so the feed is faintly visible beneath it. The feed occupies the vacated space, reserving the Android gesture inset, and the system gesture handle remains visible. Section changes restore the bar independently of the top toolbar.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml", "smarttubetv/src/stmobile/res/values/colors_mobile.xml", "smarttubetv/src/stmobile/res/values-night/colors_mobile.xml"],
+      "tests": [],
+      "checks": ["Slow up and down swipes leave bottom navigation unchanged", "Quick up and down swipes hide and restore bottom navigation", "Feed fills the hidden bar area while the Android gesture handle stays visible", "Section changes restore bottom navigation"]
+    },
+    {
+      "id": "bottom-account-cycle",
+      "behavior": "The rightmost bottom item shows the current account photo and Account caption. A tap switches directly to the next saved account in the current service-list order and wraps, without a picker or custom order storage. Signed-out use selects the first saved account; no saved accounts opens sign-in. The action keeps navigation selection separate, preserves photo colors and is described in Settings > Tabs.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/accounts/AccountCycle.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/AvatarDrawable.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BottomAccountSwitch.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BottomTabMenu.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/BrowseNavigation.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/AppPages.java", "smarttubetv/src/stmobile/res/values/strings_mobile.xml", "smarttubetv/src/stmobile/res/values/strings_settings.xml"],
+      "tests": ["AccountCycleTest", "AvatarDrawableTest", "BrowseNavigationTest"],
+      "checks": ["Account caption appears below the circular active-account photo", "Tap switches directly and wraps to the first saved account", "Current saved-list order is used without a separate ordering preference", "Signed-out tap selects the first remembered account", "Photos change with the account and keep their original colors", "Avatar action does not become the selected feed tab", "Account action remains on the right with hidden feed tabs", "Holding Account offers only Settings and opens Tabs without cycling accounts"]
+    },
+    {
+      "id": "app-only-settings",
+      "behavior": "Settings starts with app categories, without an account row or account-management search result. Manual account management remains under You; the bottom Account avatar retains direct cycling.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/SettingsPages.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/SettingsSearch.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/MobileSettingsActivity.java", "smarttubetv/src/stmobile/res/values/strings_settings.xml", "smarttubetv/src/stmobile/res/values/strings_settings_search.xml", "smarttubetv/src/stmobile/res/values-es/strings_settings.xml", "smarttubetv/src/stmobile/res/values-es/strings_settings_search.xml"],
+      "checks": ["Settings starts with app categories and does not display the selected account", "Settings search has no account-management result", "The You account header opens the saved-account sheet", "General settings navigation remains available"]
+    },
+    {
+      "id": "watch-later-drag-order",
+      "behavior": "Watch later videos have YouTube-style two-line handles before their thumbnails. Handle drags reorder immediately without jumping the viewport to the top after each swap, scroll near the list edges, save to the active account and verify the server position. Failed saves restore the displayed order; account changes cancel work. The playlist header stays fixed, video long-press and swipe removal/Undo remain available, and Up next has no handles.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/watchlater/PlaylistOrderStore.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/WatchLaterReorder.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/WatchLaterSwipe.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/VideoCardAdapter.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "smarttubetv/src/stmobile/res/layout/item_mobile_related_video.xml", "smarttubetv/src/stmobile/res/drawable/ic_mobile_drag_handle.xml", "smarttubetv/src/stmobile/res/values/strings_mobile.xml", "smarttubetv/build.gradle"],
+      "tests": ["PlaylistOrderStoreTest", "WatchLaterDragAdapterTest"],
+      "checks": ["Handles match YouTube: 16 dp leading column, approximately 12 dp lines, no extra side spacer and 48 dp touch height", "Dragging upward across neighboring rows preserves the viewport and does not jump to the first item", "Edge scrolling continues while dragging", "Drag moves save and survive restart", "Header cannot move and row long-press opens its menu", "Compact rows fit narrow portrait and landscape layouts", "Swipe removal and Undo remain available", "Account changes cannot save into the next account"]
+    },
+    {
+      "id": "subscriptions-new-videos-dot",
+      "behavior": "Subscriptions is immediately before the Account avatar. A numberless red dot represents new videos relative to an account-scoped acknowledged snapshot. Only tapping Subscriptions followed by a successful fresh first-page load clears it. Foreground checks run on open/resume and every five minutes; background checks, cached repaints and failed refreshes do not clear it.",
+      "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/subscriptions/SubscriptionUpdates.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/subscriptions/SubscriptionSeenStore.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/SubscriptionsIndicator.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/BrowsePresenter.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/views/BrowseView.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/AppPages.java", "smarttubetv/src/stmobile/res/values/strings_mobile.xml", "smarttubetv/src/stmobile/res/values/strings_settings.xml", "smarttubetv/build.gradle", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/SubscriptionsDot.java", "smarttubetv/src/stmobile/res/drawable/ic_subscriptions_new_content.xml"],
+      "tests": ["SubscriptionUpdatesTest", "SubscriptionSeenStoreTest", "NavigationTabsSettingsTest", "SubscriptionsDotTest"],
+      "checks": ["Bottom tabs are History, Home, Watch later, Subscriptions, Account when all feed tabs are enabled", "Red dot matches YouTube color #FF0033, 12 dp overall circle, 2 dp rim and icon-relative position, with an accessible description", "The dot survives restart and background checks", "A tab tap alone cannot clear the dot before a successful network response", "Re-tapping Subscriptions forces refresh even with fresh cached content", "Acknowledged state persists and remains separate between accounts", "Settings tab switches follow the actual bottom-tab order", "Acknowledgment removes all red pixels from the rendered badge; new unacknowledged content can display it again"]
+    }
+  ]
+}

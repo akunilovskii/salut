@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ImageButton
+        android:id="@+id/mobile_mini_play_pause"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:background="@drawable/bg_mini_scrim_circle_touch"
+        android:contentDescription="@string/mobile_mini_play_pause"
+        android:padding="@dimen/mobile_mini_button_icon_padding"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_mini_pause" />
+
+    <ImageButton
+        android:id="@+id/mobile_mini_close"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:background="@drawable/bg_mini_scrim_circle_touch"
+        android:contentDescription="@string/mobile_mini_close"
+        android:padding="@dimen/mobile_mini_button_icon_padding"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_mini_close" />
+
+</merge>

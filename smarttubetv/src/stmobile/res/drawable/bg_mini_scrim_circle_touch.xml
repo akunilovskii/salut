@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A 36dp circle inside each 48dp mini-player touch target. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/bg_mini_scrim_circle"
+    android:inset="6dp" />

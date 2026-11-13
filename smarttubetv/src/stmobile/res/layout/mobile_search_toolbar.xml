@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mobile_search_toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="56dp"
+    android:background="?attr/newtubeColorBackground"
+    android:focusableInTouchMode="true"
+    android:defaultFocusHighlightEnabled="false"
+    android:gravity="top"
+    android:orientation="horizontal"
+    android:paddingEnd="4dp">
+
+    <ImageButton
+        android:id="@+id/mobile_search_back"
+        android:layout_width="56dp"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_search_back_touch"
+        android:contentDescription="@string/mobile_back"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp"
+        android:src="@drawable/ic_search_back" />
+
+    <FrameLayout
+        android:id="@+id/mobile_search_field_wrapper"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingEnd="8dp"
+        android:paddingBottom="8dp">
+
+        <FrameLayout
+            android:id="@+id/mobile_search_field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:minHeight="40dp"
+            android:background="@drawable/mobile_search_field_background">
+
+            <FrameLayout
+                android:id="@+id/mobile_search_text_frame"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="40dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp">
+
+                <com.newtube.mobile.ui.search.SearchQueryInput
+                    android:id="@+id/mobile_search_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:background="@null"
+                    android:fontFamily="sans-serif"
+                    android:gravity="start|center_vertical"
+                    android:hint="@string/mobile_search_hint"
+                    android:imeOptions="actionSearch|flagNoExtractUi"
+                    android:importantForAutofill="no"
+                    android:inputType="text|textMultiLine"
+                    android:maxLines="6"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:scrollHorizontally="false"
+                    android:textColor="@color/mobile_color_on_surface"
+                    android:textColorHint="@color/mobile_color_on_surface_secondary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/mobile_search_query"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif"
+                    android:gravity="start|center_vertical"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:singleLine="true"
+                    android:textColor="@color/mobile_color_on_surface"
+                    android:textSize="16sp"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+            <ImageButton
+                android:id="@+id/mobile_search_clear"
+                android:layout_width="48dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/bg_search_touch"
+                android:contentDescription="@string/mobile_search_clear"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:src="@drawable/ic_search_clear"
+                android:visibility="gone" />
+
+        </FrameLayout>
+    </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/mobile_search_mic"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_search_mic"
+        android:contentDescription="@string/mobile_search_voice"
+        android:padding="12dp"
+        android:src="@drawable/ic_search_mic" />
+
+</LinearLayout>

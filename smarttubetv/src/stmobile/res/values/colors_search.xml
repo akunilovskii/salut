@@ -1,0 +1,4 @@
+<resources>
+    <color name="mobile_search_field">#F2F2F2</color>
+    <color name="mobile_search_ripple">#20000000</color>
+</resources>

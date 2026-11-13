@@ -1,0 +1,14 @@
+<resources>
+    <string name="switch_audio_output">Audio output</string>
+    <string name="switch_audio_phone">Pixel</string>
+    <string name="switch_audio_receiver">Switch</string>
+    <string name="switch_audio_volume">Switch volume: %1$d%%</string>
+    <string name="switch_audio_volume_title">Switch volume</string>
+    <string name="switch_audio_adjust_volume">Long press to adjust Switch volume</string>
+    <string name="switch_audio_connected">Connected to Switch</string>
+    <string name="switch_audio_connecting">Connecting to Switch…</string>
+    <string name="switch_audio_failed">Switch not found. Enable the receiver and connect both devices to the same Wi-Fi.</string>
+    <string name="switch_audio_local">Audio plays on this phone.</string>
+    <string name="switch_audio_retry">Retry connection</string>
+    <string name="switch_audio_permission">Allow local network access to connect to Switch.</string>
+</resources>

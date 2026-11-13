@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Title and metadata share one description action and the reference's compact spacing. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_watch_header"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="48dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:screenReaderFocusable="true"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/mobile_watch_content_padding"
+    android:paddingTop="16dp"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/mobile_watch_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="3"
+        android:textColor="@color/mobile_color_on_surface"
+        android:textSize="18sp"
+        tools:text="A great video title that may wrap across a couple of lines" />
+
+    <LinearLayout
+        android:id="@+id/mobile_watch_meta_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="24dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="4dp">
+
+        <TextView
+            android:id="@+id/mobile_watch_meta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif"
+            android:maxLines="1"
+            android:textColor="@color/mobile_color_on_surface_secondary"
+            android:textSize="12sp"
+            tools:text="1,234,567 views • Jan 1, 2026" />
+
+        <ImageView
+            android:id="@+id/mobile_watch_expand"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_watch_expand" />
+
+    </LinearLayout>
+</LinearLayout>

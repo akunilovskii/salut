@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mobile_watch_actions_row"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingEnd="0dp">
+
+    <include layout="@layout/mobile_watch_channel_controls" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1" />
+
+    <FrameLayout
+        android:id="@+id/mobile_watch_like"
+        android:layout_width="41dp"
+        android:layout_height="48dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@string/mobile_watch_like"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/mobile_watch_like_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_watch_thumb_up_outline" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/mobile_watch_dislike"
+        android:layout_width="41dp"
+        android:layout_height="48dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@string/mobile_watch_dislike"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/mobile_watch_dislike_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_watch_thumb_down_outline" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/mobile_watch_save"
+        android:layout_width="41dp"
+        android:layout_height="48dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@string/mobile_watch_save"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/mobile_watch_save_icon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_player_playlist_add"
+            android:tint="@color/mobile_color_on_surface" />
+
+        <TextView
+            android:id="@+id/mobile_watch_save_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/mobile_watch_save"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/mobile_watch_share"
+        android:layout_width="41dp"
+        android:layout_height="48dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@string/mobile_watch_share"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_watch_share" />
+
+        <TextView
+            android:id="@+id/mobile_watch_share_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/mobile_watch_share"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/mobile_watch_download"
+        android:layout_width="41dp"
+        android:layout_height="48dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@string/dialog_download"
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/mobile_watch_download_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_watch_download" />
+
+        <TextView
+            android:id="@+id/mobile_watch_download_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dialog_download"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mobile_ai_summary">Кратко с AI</string>
+    <string name="mobile_ai_loading">Готовим ссылку и доступные субтитры...</string>
+    <string name="mobile_ai_instruction">Кратко перескажи видео: главная мысль, ключевые тезисы и вывод. Используй приложенный текст субтитров, если он доступен.</string>
+    <string name="mobile_ai_instruction_label">Инструкция</string>
+    <string name="mobile_ai_link_only">Субтитры на исходном языке недоступны. Будут переданы только ссылка и инструкция. Выбери приложение, чтобы включить кнопку «Отправить».</string>
+    <string name="mobile_ai_with_subtitles">Будут приложены субтитры на исходном языке. Выбери приложение и нажми «Отправить», чтобы открыть в нём запрос.</string>
+    <string name="mobile_ai_shortened">Транскрипт на исходном языке длинный. Будут приложены первые 120 000 символов с отметкой о сокращении. Выбери приложение и нажми «Отправить».</string>
+    <string name="mobile_ai_send">Отправить</string>
+    <string name="mobile_ai_no_apps">Нет установленного приложения, принимающего текст.</string>
+    <string name="mobile_ai_app_unavailable">Выбранное приложение недоступно. Выбери другое, чтобы включить кнопку «Отправить».</string>
+    <string name="mobile_ai_choose_app">Выбрать приложение</string>
+    <string name="mobile_channel_about">О канале</string>
+    <string name="mobile_channel_links">Ссылки канала</string>
+    <string name="mobile_channel_subscribed">Вы подписаны</string>
+    <string name="mobile_channel_profile_error">Сведения о канале недоступны. Видео остаются ниже.</string>
+    <string name="mobile_channel_pin">Закрепить</string>
+    <string name="mobile_channel_unpin">Открепить</string>
+    <string name="mobile_channel_verified">Подтверждённый канал</string>
+    <string name="mobile_channel_back">Назад</string>
+    <string name="mobile_channel_description">Описание</string>
+    <string name="mobile_channel_more_info">О канале</string>
+    <string name="mobile_channel_link_unavailable">Нет приложения для открытия ссылки.</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Rounded transport glyphs share matching cubic segments for the existing morph animation.
+         These paths belong to the full player; mini-player and notification icons are separate. -->
+    <string name="path_player_play" translatable="false">M5,4.8098 C5,3.6791 6.2418,2.9764 7.229,3.5495 L13.5118,7.2026 C13.5118,7.2026 13.5118,7.2026 13.5118,7.2026 L13.5118,16.7974 C13.5118,16.7974 13.5118,16.7974 13.5118,16.7974 L7.229,20.4505 C6.2418,21.0236 5,20.3209 5,19.1932 Z M13.5118,7.2026 C13.5118,7.2026 13.5118,7.2026 13.5118,7.2026 L21.7671,12 C21.7671,12 21.7671,12 21.7671,12 L21.7671,12 C21.7671,12 21.7671,12 21.7671,12 L13.5118,16.7974 C13.5118,16.7974 13.5118,16.7974 13.5118,16.7974 Z</string>
+    <string name="path_player_pause" translatable="false">M5,4.6899 C5,3.8828 5.672,3.2278 6.5,3.2278 L8.5,3.2278 C9.328,3.2278 10,3.8828 10,4.6899 L10,19.3101 C10,20.1172 9.328,20.7722 8.5,20.7722 L6.5,20.7722 C5.672,20.7722 5,20.1172 5,19.3101 Z M14,4.6899 C14,3.8828 14.672,3.2278 15.5,3.2278 L17.5,3.2278 C18.328,3.2278 19,3.8828 19,4.6899 L19,19.3101 C19,20.1172 18.328,20.7722 17.5,20.7722 L15.5,20.7722 C14.672,20.7722 14,20.1172 14,19.3101 Z</string>
+    <integer name="mobile_player_glyph_morph_ms">200</integer>
+</resources>

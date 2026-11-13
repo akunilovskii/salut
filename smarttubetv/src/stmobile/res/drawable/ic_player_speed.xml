@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Root tint colors the complete glyph and supports speed states on Android 7+. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24"
+    android:tint="@color/mobile_player_speed_contour">
+    <!-- Match Cast's 18-unit visible height within the existing touch target. -->
+    <group android:pivotX="12" android:pivotY="12"
+        android:scaleX="1.125" android:scaleY="1.125">
+        <path android:fillColor="@color/mobile_player_on_video"
+            android:pathData="M20.38,8.57l-1.23,1.85a8,8 0,0 1,-0.22 7.58H5.07A8,8 0,0 1,15.58 6.85l1.85,-1.23A10,10 0,0 0,3.35 19a2,2 0,0 0,1.72 1h13.85a2,2 0,0 0,1.74 -1,10 10,0 0,0 -0.27,-10.44zM10.59,15.41a2,2 0,0 0,2.83 0l5.66,-8.49 -8.49,5.66a2,2 0,0 0,0 2.83z" />
+    </group>
+</vector>

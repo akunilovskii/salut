@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mobile_ai_summary">Summarize with AI</string>
+    <string name="mobile_ai_loading">Preparing the link and available subtitles...</string>
+    <string name="mobile_ai_instruction">Summarize this video: its main idea, key points and conclusion. Use the supplied transcript when available.</string>
+    <string name="mobile_ai_instruction_label">Instruction</string>
+    <string name="mobile_ai_link_only">Original-language subtitles are unavailable. Only the link and instruction will be shared. Choose an app to enable Send.</string>
+    <string name="mobile_ai_with_subtitles">Original-language subtitles will be included. Choose an app, then tap Send to open the request there.</string>
+    <string name="mobile_ai_shortened">The original-language transcript is long. Its first 120,000 characters will be included, with a shortening notice. Choose an app, then tap Send.</string>
+    <string name="mobile_ai_send">Send</string>
+    <string name="mobile_ai_no_apps">No installed app accepts shared text.</string>
+    <string name="mobile_ai_app_unavailable">The selected app is unavailable. Choose another app to enable Send.</string>
+    <string name="mobile_ai_choose_app">Choose app</string>
+    <string name="mobile_channel_about">About this channel</string>
+    <string name="mobile_channel_links">Channel links</string>
+    <string name="mobile_channel_subscribed">Subscribed</string>
+    <string name="mobile_channel_profile_error">Channel details are unavailable. Videos remain below.</string>
+    <string name="mobile_channel_pin">Pin</string>
+    <string name="mobile_channel_unpin">Unpin</string>
+    <string name="mobile_channel_verified">Verified channel</string>
+    <string name="mobile_channel_back">Back</string>
+    <string name="mobile_channel_description">Description</string>
+    <string name="mobile_channel_more_info">More info</string>
+    <string name="mobile_channel_link_unavailable">No app can open this link.</string>
+</resources>

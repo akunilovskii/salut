@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="32dp">
+
+    <TextView
+        android:id="@+id/switch_volume_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/mobile_color_on_surface"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <SeekBar
+        android:id="@+id/switch_volume_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:contentDescription="@string/switch_audio_volume_title"
+        android:max="100"
+        android:progressTint="@color/mobile_color_on_surface"
+        android:thumbTint="@color/mobile_color_on_surface" />
+</LinearLayout>

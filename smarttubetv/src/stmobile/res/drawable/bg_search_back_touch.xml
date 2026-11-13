@@ -1,0 +1,11 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:width="@dimen/mobile_icon_feedback_size" android:height="@dimen/mobile_icon_feedback_size" android:gravity="top|center_horizontal" android:top="4dp">
+        <ripple android:color="@color/mobile_search_ripple">
+            <item android:id="@android:id/mask">
+                <shape android:shape="oval">
+                    <solid android:color="@android:color/white" />
+                </shape>
+            </item>
+        </ripple>
+    </item>
+</layer-list>
