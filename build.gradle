@@ -30,6 +30,12 @@ buildscript {
 
 allprojects {
     tasks.withType(Test).configureEach {
+        if (project.name == 'smarttubetv') {
+            // Windows native graphics must not reuse loaded Robolectric runtimes across suites.
+            forkEvery = 1
+            maxParallelForks = 2
+            maxHeapSize = '1024m'
+        }
         // Robolectric otherwise puts downloaded Android runtimes and its lock in the user profile.
         def testHome = layout.buildDirectory.dir('test-home').get().asFile
         systemProperty 'user.home', testHome.absolutePath

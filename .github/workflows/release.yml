@@ -35,6 +35,16 @@ jobs:
           python -X utf8 -m unittest discover -s tools/tests
           if ($LASTEXITCODE) { throw 'Release tooling tests failed' }
           ./personal/tools/Test.ps1
+      - name: Preserve failing test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unit-test-diagnostics
+          retention-days: 7
+          path: |
+            smarttubetv/build/test-results/
+            common/build/test-results/
+            build/maintenance/tests-*.log
 
   release:
     if: github.repository == 'akunilovskii/salut' && startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
