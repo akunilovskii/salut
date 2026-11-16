@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
-$ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
-$AssetDirectory = Join-Path $ProjectRoot 'smarttubetv\build\generated\ttffFixtureAssets'
+$ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+$AssetDirectory = Join-Path $ProjectRoot 'smarttubetv/build/generated/ttffFixtureAssets'
 $SourceBase = 'https://raw.githubusercontent.com/aleixrodriala/newtube/v1.17.1/smarttubetv/src/debug/assets/'
 $Fixtures = @(
     @{ Path = 'ttff-fixture.mp4'; Hash = '0118627927aa8f92c47d4d7378bc8ab4c9d0dd0f0c8cd0469518d8e32f4a6e56' },
@@ -20,15 +20,9 @@ foreach ($Fixture in $Fixtures) {
     }
 
     $DownloadPath = "$FixturePath.download"
-    try {
-        Invoke-WebRequest -Uri ($SourceBase + $Fixture.Path) -OutFile $DownloadPath
-        if ((Get-FileHash -LiteralPath $DownloadPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $Fixture.Hash) {
-            throw "Downloaded test fixture $($Fixture.Path) does not match the pinned SHA-256."
-        }
-        Move-Item -LiteralPath $DownloadPath -Destination $FixturePath -Force
-    } finally {
-        if (Test-Path -LiteralPath $DownloadPath) {
-            [IO.File]::Delete($DownloadPath)
-        }
+    Invoke-WebRequest -Uri ($SourceBase + $Fixture.Path) -OutFile $DownloadPath
+    if ((Get-FileHash -LiteralPath $DownloadPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $Fixture.Hash) {
+        throw "Downloaded test fixture $($Fixture.Path) does not match the pinned SHA-256."
     }
+    Move-Item -LiteralPath $DownloadPath -Destination $FixturePath -Force
 }

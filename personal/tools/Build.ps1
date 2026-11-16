@@ -5,8 +5,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
-$Manifest = Get-Content -LiteralPath (Join-Path $ProjectRoot 'personal\manifest.json') -Raw | ConvertFrom-Json
+$ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+$Manifest = Get-Content -LiteralPath (Join-Path $ProjectRoot 'personal/manifest.json') -Raw | ConvertFrom-Json
+$JavaExecutable = if ($IsWindows) { 'java.exe' } else { 'java' }
 $KeyPath = if ($env:SALUT_SIGNING_KEY) { $env:SALUT_SIGNING_KEY } else { Join-Path $ProjectRoot $Manifest.application.key }
 if ((Test-Path -LiteralPath $KeyPath) -and
     (Get-FileHash -LiteralPath $KeyPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $Manifest.application.keyFileSha256) {
@@ -17,8 +18,8 @@ if (($GradleArguments -contains '-PsalutRelease') -and -not (Test-Path -LiteralP
 }
 
 if (-not $ToolchainRoot) {
-    foreach ($Candidate in @((Join-Path $ProjectRoot 'build\toolchain'))) {
-        if (Test-Path -LiteralPath (Join-Path $Candidate 'java\bin\java.exe')) {
+    foreach ($Candidate in @((Join-Path $ProjectRoot 'build/toolchain'))) {
+        if (Test-Path -LiteralPath (Join-Path $Candidate "java/bin/$JavaExecutable")) {
             $ToolchainRoot = [IO.Path]::GetFullPath($Candidate)
             break
         }
@@ -34,14 +35,20 @@ if ($ToolchainRoot) {
     if (-not $env:JAVA_HOME -or -not $env:ANDROID_HOME) {
         throw 'Set JAVA_HOME and ANDROID_HOME, or supply -ToolchainRoot. See PERSONAL.md.'
     }
-    $env:GRADLE_USER_HOME = Join-Path $ProjectRoot 'build\gradle-user-home'
-    $env:ANDROID_USER_HOME = Join-Path $ProjectRoot 'build\android-user'
+    $env:GRADLE_USER_HOME = Join-Path $ProjectRoot 'build/gradle-user-home'
+    $env:ANDROID_USER_HOME = Join-Path $ProjectRoot 'build/android-user'
 }
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-foreach ($Required in @("$env:JAVA_HOME\bin\java.exe", "$env:ANDROID_HOME\platforms\android-37.0\android.jar")) {
+$JavaBin = Join-Path $env:JAVA_HOME 'bin'
+$env:PATH = $JavaBin + [IO.Path]::PathSeparator + $env:PATH
+foreach ($Required in @((Join-Path $JavaBin $JavaExecutable), (Join-Path $env:ANDROID_HOME 'platforms/android-37.0/android.jar'))) {
     if (-not (Test-Path -LiteralPath $Required)) { throw "Missing build toolchain input: $Required" }
 }
-$ProjectCache = Join-Path $ProjectRoot 'build\gradle-project-cache'
+$ProjectCache = Join-Path $ProjectRoot 'build/gradle-project-cache'
 & (Join-Path $PSScriptRoot 'Ensure-TestFixture.ps1')
-& (Join-Path $ProjectRoot 'gradlew.bat') '-p' $ProjectRoot '--project-cache-dir' $ProjectCache '--console=plain' '--max-workers=4' @Tasks @GradleArguments
+$WrapperArguments = @('-p', $ProjectRoot, '--project-cache-dir', $ProjectCache, '--console=plain', '--max-workers=4') + $Tasks + $GradleArguments
+if ($IsWindows) {
+    & (Join-Path $ProjectRoot 'gradlew.bat') @WrapperArguments
+} else {
+    & bash (Join-Path $ProjectRoot 'gradlew') @WrapperArguments
+}
 if ($LASTEXITCODE -ne 0) { throw "Gradle failed with exit code $LASTEXITCODE" }

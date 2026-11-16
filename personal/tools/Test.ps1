@@ -1,8 +1,8 @@
 param([string]$ToolchainRoot)
 
 $ErrorActionPreference = 'Stop'
-$ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
-$LogRoot = Join-Path $ProjectRoot 'build\maintenance'
+$ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+$LogRoot = Join-Path $ProjectRoot 'build/maintenance'
 New-Item -ItemType Directory -Force -Path $LogRoot | Out-Null
 $Groups = @(
     @{
@@ -27,12 +27,12 @@ $Groups = @(
             'com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.PlaylistRemovalTest',
             'com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.OwnPlaylistMatchTest'
         )
-        Results = 'common\build\test-results\testDebugUnitTest'
+        Results = 'common/build/test-results/testDebugUnitTest'
     },
     @{
         Name = 'notification-provider'; Task = ':youtubeapi:testDebugUnitTest'
         Suites = @('com.liskovsoft.youtubeapi.notifications.PhoneNotificationPreferenceTest', 'com.liskovsoft.youtubeapi.next.v1.models.VideoOwnerHandleTest')
-        Results = 'MediaServiceCore\youtubeapi\build\test-results\testDebugUnitTest'
+        Results = 'MediaServiceCore/youtubeapi/build/test-results/testDebugUnitTest'
     },
     @{
         Name = 'phone'; Task = ':smarttubetv:testStmobileDebugUnitTest'
@@ -97,7 +97,7 @@ $Groups = @(
             'com.newtube.mobile.ui.playback.MinimizeBackdropTest',
             'com.newtube.mobile.ui.playback.PlayingReturnTest'
         )
-        Results = 'smarttubetv\build\test-results\testStmobileDebugUnitTest'
+        Results = 'smarttubetv/build/test-results/testStmobileDebugUnitTest'
     }
 )
 foreach ($Group in $Groups) {
