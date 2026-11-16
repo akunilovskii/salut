@@ -64,6 +64,11 @@ jobs:
       - name: Install Android platform
         shell: pwsh
         run: '& "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" "platforms;android-37.0" "build-tools;37.0.0"'
+      - name: Prepare version-specific release notes
+        shell: pwsh
+        run: |
+          python -X utf8 -m tools.release_notes --tag "$env:GITHUB_REF_NAME" --out build/maintenance/release-notes.md
+          if ($LASTEXITCODE) { throw 'Release notes preparation failed' }
       - name: Restore signing key
         shell: pwsh
         env:
@@ -86,5 +91,5 @@ jobs:
         run: |
           $dist = 'smarttubetv/build/outputs/renamed_apks/stmobileRelease'
           $assets = @(Get-ChildItem -LiteralPath $dist -File | ForEach-Object FullName)
-          gh release create "$env:GITHUB_REF_NAME" @assets --repo "$env:GITHUB_REPOSITORY" --verify-tag --latest --title "Salut $($env:GITHUB_REF_NAME)" --notes-file CHANGELOG.md
+          gh release create "$env:GITHUB_REF_NAME" @assets --repo "$env:GITHUB_REPOSITORY" --verify-tag --latest --title "Salut $($env:GITHUB_REF_NAME)" --notes-file 'build/maintenance/release-notes.md'
           if ($LASTEXITCODE) { throw 'Release publication failed' }

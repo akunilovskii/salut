@@ -51,6 +51,11 @@ def lead(bullet):
     return m.group(1) if m else text
 
 
+def version_from_heading(line):
+    match = re.match(r"## (\d+\.\d+\.\d+)(?=\s|$)", line)
+    return match.group(1) if match else None
+
+
 def parse_changelog(path):
     """{version name: [lines]} in file order (newest first)."""
     versions, current, section, bullet = {}, None, "", None
@@ -62,9 +67,8 @@ def parse_changelog(path):
     for raw in path.read_text(encoding="utf-8").splitlines():
         if raw.startswith("## "):
             flush()
-            heading = re.match(r"## (\d+\.\d+\.\d+)\b", raw)
             bullet, section = None, ""
-            current = heading.group(1) if heading else None  # "## Unreleased" belongs to no version
+            current = version_from_heading(raw)  # "## Unreleased" belongs to no version
             if current:
                 versions[current] = []
         elif raw.startswith("### "):

@@ -19,7 +19,7 @@ The public source includes the modified SharedModules and MediaServiceCore depen
 
 On Linux or macOS, run `bash gradlew :smarttubetv:assembleStmobileDebug`. The wrapper downloads its pinned, hash-checked Gradle bootstrap. Development builds use a local development key and cannot replace official builds. The official signing key is not included in the public source.
 
-GitHub Actions tests each push and pull request. A version tag matching personal/release.json runs the tests, builds signed release APKs, verifies their package, version and certificate, and publishes the APKs, SHA256SUMS and salut.json update feed in GitHub Releases. The maintainer supplies SALUT_SIGNING_KEY_BASE64 through GitHub Secrets. See CHANGELOG.md for release notes and personal/features.json for the behavior inventory.
+GitHub Actions tests each push and pull request. A version tag matching personal/release.json runs the tests, builds signed release APKs, verifies their package, version and certificate, and publishes the APKs, SHA256SUMS and salut.json update feed in GitHub Releases. The maintainer supplies SALUT_SIGNING_KEY_BASE64 through GitHub Secrets. GitHub release notes contain only the tagged version section from CHANGELOG.md; Unreleased and earlier versions are excluded. See CHANGELOG.md for release history and personal/features.json for the behavior inventory.
 
 ## License and attribution
 
