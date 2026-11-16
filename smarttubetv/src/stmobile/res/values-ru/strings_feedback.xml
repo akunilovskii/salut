@@ -1,0 +1,26 @@
+<resources>
+    <string name="feedback_title">Анонимная обратная связь</string>
+    <string name="feedback_note">Печатай или диктуй через клавиатуру. Не добавляй личные данные. Автоматически передаются только версии Salut и Android.</string>
+    <string name="feedback_screen">Экран</string>
+    <string name="feedback_function">Функция (необязательно, до 200 символов)</string>
+    <string name="feedback_description">Описание (обязательно, до 6000 символов)</string>
+    <string name="feedback_steps">Шаги воспроизведения (необязательно, до 4000 символов)</string>
+    <string name="feedback_expected">Ожидаемое поведение (необязательно, до 4000 символов)</string>
+    <string name="feedback_send">Отправить</string>
+    <string name="feedback_invalid">Проверь обязательные поля и ограничения длины (всего до 32 КБ). Черновик сохранён.</string>
+    <string name="feedback_rate">Слишком много запросов. Попробуй позже. Черновик сохранён.</string>
+    <string name="feedback_failed">Доставка не подтверждена. Проверь подключение и попробуй снова. Черновик сохранён.</string>
+    <string name="feedback_success">Сообщение принято. Спасибо.</string>
+    <string-array name="feedback_types"><item>Выбери тип (обязательно)</item><item>Ошибка</item><item>Улучшение</item></string-array>
+    <string-array name="feedback_screens">
+        <item>Главная</item>
+        <item>Подписки</item>
+        <item>Смотреть позже</item>
+        <item>Плейлист</item>
+        <item>Канал</item>
+        <item>Поиск</item>
+        <item>Плеер</item>
+        <item>Настройки</item>
+        <item>Другое</item>
+    </string-array>
+</resources>

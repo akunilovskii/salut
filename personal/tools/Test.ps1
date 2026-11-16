@@ -37,6 +37,8 @@ $Groups = @(
     @{
         Name = 'phone'; Task = ':smarttubetv:testStmobileDebugUnitTest'
         Suites = @(
+            'com.newtube.mobile.feedback.FeedbackDraftTest',
+            'com.newtube.mobile.feedback.FeedbackFormTest',
             'com.newtube.mobile.notifications.NotificationSeenStoreTest',
             'com.newtube.mobile.downloads.CoverDownloadTest',
             'com.newtube.mobile.audio.SwitchAudioTest',

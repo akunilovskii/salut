@@ -498,6 +498,22 @@
         "Explicit queue interruptions retain the source cursor and independent controls",
         "Leaving the source drops session-only controls without changing persisted settings"
       ]
+    },
+    {
+      "id": "phone-anonymous-feedback",
+      "behavior": "Browse feedback opens a scrollable themed form using ordinary keyboard input. Private preferences retain drafts and exact retry envelopes, including original app/Android versions across updates until draft fields change. Only the approved message fields and real app/Android versions go to the HTTPS IP endpoint, without accounts or identifiers. Only matching 202 accepted receipts clear drafts; hidden error fields are omitted for improvements. Screen labels are localized while payload categories stay stable. Dismissal cancels the request-local call created before scheduling. Deterministic lifecycle regression tests cover scheduled and in-flight cancellation, duplicate sends and draft preservation on network failure. Device validation pending.",
+      "files": [
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/feedback/FeedbackDraft.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/feedback/FeedbackForm.java",
+        "smarttubetv/src/stmobile/res/layout/activity_mobile_browse.xml"
+      ],
+      "tests": [
+        "FeedbackDraftTest",
+        "FeedbackFormTest"
+      ],
+      "checks": [
+        "Validate narrow toolbar, Switch visibility, keyboard, mini-player and live delivery on device"
+      ]
     }
   ]
 }

@@ -190,6 +190,7 @@ public class MobileBrowseActivity extends MobileActivity
     private TextView mErrorMessage;
     private MaterialButton mErrorAction;
     private ImageButton mSearchButton;
+    private final com.newtube.mobile.feedback.FeedbackForm mFeedback = new com.newtube.mobile.feedback.FeedbackForm();
     private ImageButton mCastButton;
     /** Process-wide cast session singleton; Browse only reads state + opens the picker. */
     private CastSessionManager mCastSessionManager;
@@ -295,6 +296,10 @@ public class MobileBrowseActivity extends MobileActivity
         setupErrorAction();
         setupSearchButton();
         setupCastButton();
+        findViewById(R.id.mobile_feedback_button).setOnClickListener(v -> mFeedback.show(this,
+                mCurrentSectionId == MediaGroup.TYPE_HOME && !mYouShowing ? "Home"
+                : mCurrentSectionId == MediaGroup.TYPE_SUBSCRIPTIONS && !mYouShowing ? "Subscriptions"
+                : mCurrentSectionId == BrowseSection.WATCH_LATER_ID && !mYouShowing ? "Watch later" : "Other"));
 
         mPresenter = BrowsePresenter.instance(this);
         mPresenter.setView(this);
@@ -2351,6 +2356,7 @@ public class MobileBrowseActivity extends MobileActivity
 
     @Override
     protected void onDestroy() {
+        mFeedback.close();
         unwatchMiniScreenOn(); // the shared player outlives this Activity
         mNavHandler.removeCallbacks(mNavRebuild);
         mNavHandler.removeCallbacks(mRunwayCheck);
