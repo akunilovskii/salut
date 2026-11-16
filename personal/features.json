@@ -2,6 +2,24 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "anonymous-feedback-receiver",
+      "behavior": "Standalone stdlib HTTP receiver validates anonymous schema v1 text feedback, commits a SQLite outbox before acceptance and deduplicates normalized report UUIDs. A separate token-file-only worker delivers bounded plain-text Telegram parts with persisted progress, transport-failure retries and a shared SQLite delivery cooldown measured after each failed request. No Android UI changes, account/device identifiers, stored IPs or access logs. In-memory restart-keyed rate limits, trusted-proxy opt-in and bounded socket/body/concurrency limits protect the receiver. Deployment and live Telegram validation remain separate; delivery is at-least-once and requires one worker per database.",
+      "files": [
+        "tools/feedback_server.py",
+        "tools/feedback_delivery.py",
+        "personal/feedback/Dockerfile"
+      ],
+      "tests": [
+        "tools/tests/test_feedback.py"
+      ],
+      "checks": [
+        "202 only after commit; equivalent UUID payloads deduplicate and conflicts return 409",
+        "Unknown fields, invalid types and oversized bodies rejected; JSON decoder depth failures return 400",
+        "Unicode-safe delivery resumes with report IDs; truncated HTTP responses retry without loss and shared Retry-After survives worker restart",
+        "No Telegram credential in receiver; proxy must overwrite client-IP header and disable IP access logs"
+      ]
+    },
+    {
       "id": "github-public-releases",
       "behavior": "Public source and releases use akunilovskii/salut only. The clean public history is independent of retained signing material, which stays outside Git. Source export flattens reviewed dependency sources and omits keys, private instructions and local state. Release builds preserve the existing package and certificate, use increasing versions and enable the existing GitHub update flow with its existing global About preference and hourly automatic check. Downloads and installation require user action. Debug development builds retain disabled automatic checks. Version tags trigger tests, signed APK builds, identity verification and release publication. Older private builds need one manual update. GitHub release notes export only the tagged version section from CHANGELOG.md, preserving its complete Markdown. Unreleased and other versions are excluded; missing, empty or duplicate sections stop publication before signing-key restoration. GitHub Actions tests and release jobs run on Ubuntu 24.04; shared PowerShell 7 build and test helpers also support local Windows builds.",
       "files": [
