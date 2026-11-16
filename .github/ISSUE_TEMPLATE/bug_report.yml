@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a problem with Salut
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not include passwords, tokens, or personal data in this issue, logs, or screenshots.
+  - type: input
+    id: salut-version
+    attributes:
+      label: Salut version
+      description: Find this in the app's About screen or the release you installed.
+      placeholder: e.g. 1.2.3
+    validations:
+      required: true
+  - type: input
+    id: device-android
+    attributes:
+      label: Device and Android version
+      placeholder: e.g. Pixel 8, Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to reproduce
+      description: Describe what you did, starting from the app screen where the problem occurs.
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs-screenshots
+    attributes:
+      label: Logs and screenshots (optional)
+      description: Add relevant logs or drag and drop screenshots here. Remove secrets and personal data first.
+    validations:
+      required: false

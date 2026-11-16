@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest an improvement to Salut
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Do not include passwords, tokens, or personal data in this issue, logs, or screenshots.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem or limitation are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: desired-behavior
+    attributes:
+      label: Desired behavior
+      description: What would you like Salut to do?
+    validations:
+      required: true
+  - type: textarea
+    id: affected-features
+    attributes:
+      label: Affected existing features
+      description: Which current features or settings would this change affect? Write "none" if not applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: logs-screenshots
+    attributes:
+      label: Logs and screenshots (optional)
+      description: Add relevant logs or drag and drop screenshots here. Remove secrets and personal data first.
+    validations:
+      required: false
