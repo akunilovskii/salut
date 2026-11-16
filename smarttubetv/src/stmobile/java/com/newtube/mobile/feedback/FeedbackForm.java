@@ -76,10 +76,10 @@ public final class FeedbackForm {
         for (int i = 0; i < categories.length; i++) if (categories[i].equals(draft.screen)) screen.setSelection(i);
         screen.setContentDescription(activity.getString(R.string.feedback_screen));
         content.addView(screen);
-        EditText function = field(content, R.string.feedback_function, draft.function, false);
-        EditText description = field(content, R.string.feedback_description, draft.description, true);
-        EditText steps = field(content, R.string.feedback_steps, draft.steps, true);
-        EditText expected = field(content, R.string.feedback_expected, draft.expected, true);
+        EditText function = field(content, R.string.feedback_function, draft.function, false, 200);
+        EditText description = field(content, R.string.feedback_description, draft.description, true, 6000);
+        EditText steps = field(content, R.string.feedback_steps, draft.steps, true, 4000);
+        EditText expected = field(content, R.string.feedback_expected, draft.expected, true, 4000);
         ScrollView scroll = new ScrollView(context); scroll.addView(content);
         dialog = new MaterialAlertDialogBuilder(context).setTitle(R.string.feedback_title).setView(scroll)
                 .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.feedback_send, null).create();
@@ -164,10 +164,12 @@ public final class FeedbackForm {
         for (EditText field : fields) field.setEnabled(true);
     }
 
-    private static EditText field(LinearLayout parent, int label, String value, boolean multiline) {
+    private static EditText field(LinearLayout parent, int label, String value, boolean multiline, int counterMaxLength) {
         TextInputLayout layout = new TextInputLayout(parent.getContext(), null,
                 com.google.android.material.R.attr.textInputOutlinedStyle);
         layout.setHint(parent.getContext().getString(label));
+        layout.setCounterEnabled(true);
+        layout.setCounterMaxLength(counterMaxLength);
         TextInputEditText edit = new TextInputEditText(layout.getContext());
         edit.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
                 | (multiline ? android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0));

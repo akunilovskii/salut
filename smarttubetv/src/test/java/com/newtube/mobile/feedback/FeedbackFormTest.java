@@ -10,17 +10,16 @@ import android.widget.Button;
 import io.reactivex.rxjava3.schedulers.TestScheduler;
 import java.io.IOException;
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Protocol;
 import okhttp3.MediaType;
-import okio.Timeout;
 import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.textfield.TextInputLayout;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
@@ -54,7 +53,20 @@ public class FeedbackFormTest {
             Spinner screen = spinners.get(1);
             assertEquals("Подписки", screen.getSelectedItem().toString());
             assertEquals(4, fields.size());
-            assertEquals(activity.getString(R.string.feedback_description), fields.get(1).getHint().toString());
+            int[] labels = {R.string.feedback_function, R.string.feedback_description,
+                    R.string.feedback_steps, R.string.feedback_expected};
+            int[] limits = {200, 6000, 4000, 4000};
+            for (int i = 0; i < fields.size(); i++) {
+                TextInputLayout input = fields.get(i);
+                assertEquals(activity.getString(labels[i]), input.getHint().toString());
+                assertFalse("Limits belong in counters, not hints", input.getHint().toString().matches(".*[0-9].*"));
+                assertTrue(input.isCounterEnabled());
+                assertEquals(limits[i], input.getCounterMaxLength());
+            }
+            // Counters display limits without truncating the user's draft or changing validation.
+            fields.get(0).getEditText().setText(new String(new char[201]).replace('\0', 'x'));
+            assertEquals(201, fields.get(0).getEditText().length());
+            fields.get(0).getEditText().setText("");
             screen.setSelection(4);
             Shadows.shadowOf(Looper.getMainLooper()).idle();
             assertEquals("Канал", screen.getSelectedItem().toString());
@@ -158,17 +170,38 @@ public class FeedbackFormTest {
         boolean fail;
         Runnable onExecute;
         FakeCall latest;
-        public Call newCall(Request request) { created++; return latest = new FakeCall(request); }
-        private final class FakeCall implements Call {
+        public Call newCall(Request request) {
+            created++;
+            latest = new FakeCall(request);
+            return latest.call;
+        }
+        private final class FakeCall {
             final Request request;
             boolean cancelled, executed;
-            FakeCall(Request request) { this.request = request; }
+            final Call call;
+            FakeCall(Request request) {
+                this.request = request;
+                // Keep this test double independent of new abstract OkHttp Call methods.
+                call = (Call) Proxy.newProxyInstance(Call.class.getClassLoader(), new Class<?>[]{Call.class},
+                        (proxy, method, args) -> {
+                            switch (method.getName()) {
+                                case "request": return request;
+                                case "execute": return execute();
+                                case "cancel": cancelled = true; return null;
+                                case "isExecuted": return executed;
+                                case "isCanceled": return cancelled;
+                                case "toString": return "FeedbackTestCall";
+                                case "hashCode": return System.identityHashCode(proxy);
+                                case "equals": return proxy == args[0];
+                                default: throw new AssertionError("Unexpected Call method: " + method);
+                            }
+                        });
+            }
             String payload() throws IOException {
                 okio.Buffer buffer = new okio.Buffer();
                 request.body().writeTo(buffer);
                 return buffer.readUtf8();
             }
-            public Request request() { return request; }
             public Response execute() throws IOException {
                 executions++; executed = true;
                 if (onExecute != null) onExecute.run();
@@ -177,12 +210,7 @@ public class FeedbackFormTest {
                         .code(503).message("Unavailable")
                         .body(ResponseBody.create(MediaType.parse("application/json"), "{}")).build();
             }
-            public void enqueue(Callback callback) { throw new UnsupportedOperationException(); }
-            public void cancel() { cancelled = true; }
-            public boolean isExecuted() { return executed; }
-            public boolean isCanceled() { return cancelled; }
-            public Timeout timeout() { return new Timeout(); }
-            public Call clone() { return new FakeCall(request); }
+
         }
     }
 

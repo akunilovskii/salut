@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Anonymous feedback:** A toolbar form sends errors and improvements without an account. Private drafts survive closing and failed delivery; only confirmed receipts clear them. Screen choices are localized, and closing the form cancels its pending request. Unchanged retries keep the original message and ID even after app or Android updates.
+- **Anonymous feedback:** A toolbar form sends errors and improvements without an account. Private drafts survive closing and failed delivery; only confirmed receipts clear them. Screen choices are localized, and closing the form cancels its pending request. Unchanged retries keep the original message and ID even after app or Android updates. Short field labels and separate character counters keep the form readable.
 
 - **Playlists open directly below the player:** Show the loaded playlist directly below the player, with the current video marked. The heading includes its position, playlist size, owner and privacy icon. Removed the collapsed playlist card and unrelated loading placeholders.
 - **The current video starts below the playlist heading:** Opening a playlist positions the selected row at the top of the list. Near the end, scrolling stops at the last row without adding empty space.

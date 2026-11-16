@@ -2,10 +2,10 @@
     <string name="feedback_title">Anonymous feedback</string>
     <string name="feedback_note">Type or dictate using your keyboard. Do not include personal information. Only Salut and Android versions are added.</string>
     <string name="feedback_screen">Screen</string>
-    <string name="feedback_function">Function (optional, up to 200 characters)</string>
-    <string name="feedback_description">Description (required, up to 6000 characters)</string>
-    <string name="feedback_steps">Steps to reproduce (optional, up to 4000 characters)</string>
-    <string name="feedback_expected">Expected behavior (optional, up to 4000 characters)</string>
+    <string name="feedback_function">Function (optional)</string>
+    <string name="feedback_description">Description (required)</string>
+    <string name="feedback_steps">Steps (optional)</string>
+    <string name="feedback_expected">Expected result (optional)</string>
     <string name="feedback_send">Send</string>
     <string name="feedback_invalid">Check required fields and length limits (32 KB total). Your draft is saved.</string>
     <string name="feedback_rate">Too many requests. Try again later. Your draft is saved.</string>
