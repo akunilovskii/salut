@@ -208,12 +208,17 @@ class HttpTest(unittest.TestCase):
         self.assertEqual(self.request(body='{}', headers={'Transfer-Encoding': 'chunked'})[0], 400)
 
     def test_deeply_nested_json_returns_400(self):
-        # Valid JSON syntax within the body limit, but beyond decoder depth.
+        # Decoder depth limits vary; a nested array is not a valid report either way.
         body = '[' * 2000 + '0' + ']' * 2000
         self.assertLessEqual(len(body.encode('utf-8')), server.MAX_BODY)
-        with self.assertRaises(RecursionError):
-            json.loads(body)
         status, response = self.request(body=body)
+        self.assertEqual(status, 400)
+        self.assertEqual(json.loads(response), {'error': 'Invalid request'})
+
+    def test_json_decoder_recursion_error_returns_400(self):
+        with patch.object(server.json, 'loads', side_effect=RecursionError) as loads:
+            status, response = self.request(body='{}')
+            loads.assert_called_once()
         self.assertEqual(status, 400)
         self.assertEqual(json.loads(response), {'error': 'Invalid request'})
 
