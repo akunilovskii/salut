@@ -187,8 +187,8 @@
     <string name="mobile_settings_resume_live">Resume live streams</string>
     <string name="mobile_settings_resume_live_summary">Pick up a live stream where you left it, not at the live point</string>
     <string name="mobile_settings_watch_page">Under the video</string>
-    <string name="mobile_settings_hide_related">Recommendations by source</string>
-    <string name="mobile_settings_hide_related_summary">Show recommendations for Home, search and external links. Hide them for your lists and channels.</string>
+    <string name="mobile_settings_hide_related">Limit recommendations</string>
+    <string name="mobile_settings_hide_related_summary">When enabled, hide YouTube recommendations for videos opened from Watch later, your playlists, Subscriptions, History, and channel pages. Keep recommendations for videos opened from Home, search, or external links.</string>
     <string name="mobile_settings_dislikes">Show dislike counts</string>
     <string name="mobile_settings_dislikes_summary">From Return YouTube Dislike, which receives the video\'s ID</string>
     <string name="mobile_settings_paid_promotion">Tell me about paid promotion</string>

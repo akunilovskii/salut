@@ -106,4 +106,57 @@ public class QueuePlaybackModeTest {
         QueuePlaybackMode.onNewVideo(inPlaylist("PL2"));
         assertEquals(STORED, QueuePlaybackMode.apply(inPlaylist("PL2"), STORED));
     }
+    @Test public void sessionRepeatAndShuffleAreIndependentAndDoNotChangeGlobalMode() {
+        QueuePlaybackMode.Session session = new QueuePlaybackMode.Session();
+        session.start(STORED);
+        session.cycleRepeat();
+        session.toggleShuffle();
+        assertEquals(QueuePlaybackMode.Session.REPEAT_ALL, session.repeat());
+        assertTrue(session.isShuffling());
+        assertEquals(PlayerConstants.PLAYBACK_MODE_SHUFFLE, session.playbackMode());
+        session.cycleRepeat();
+        assertEquals(QueuePlaybackMode.Session.REPEAT_ONE, session.repeat());
+        assertTrue(session.isShuffling());
+        assertEquals(PlayerConstants.PLAYBACK_MODE_ONE, session.playbackMode());
+        session.cycleRepeat();
+        assertEquals(QueuePlaybackMode.Session.REPEAT_OFF, session.repeat());
+        assertTrue(session.isShuffling());
+        assertFalse(QueuePlaybackMode.isArmed());
+        assertEquals(STORED, QueuePlaybackMode.apply(inPlaylist("PL1"), STORED));
+    }
+
+    @Test public void sessionInheritsPauseUntilTheUserExplicitlySelectsAnotherMode() {
+        QueuePlaybackMode.Session session = new QueuePlaybackMode.Session();
+        session.start(PlayerConstants.PLAYBACK_MODE_PAUSE);
+        assertEquals(PlayerConstants.PLAYBACK_MODE_PAUSE, session.playbackMode());
+        session.cycleRepeat();
+        assertEquals(PlayerConstants.PLAYBACK_MODE_ALL, session.playbackMode());
+        session.start(PlayerConstants.PLAYBACK_MODE_PAUSE);
+        assertEquals(QueuePlaybackMode.Session.REPEAT_OFF, session.repeat());
+        assertFalse(session.isShuffling());
+    }
+
+    @Test public void sessionReflectsAnExplicitGlobalPickerChoiceEvenIfItsValueHasNotChanged() {
+        QueuePlaybackMode.Session session = new QueuePlaybackMode.Session();
+        session.start(STORED);
+        session.cycleRepeat();
+        session.toggleShuffle();
+        QueuePlaybackMode.clear();
+        session.refresh(STORED);
+        assertEquals(QueuePlaybackMode.Session.REPEAT_OFF, session.repeat());
+        assertFalse(session.isShuffling());
+        assertEquals(STORED, session.playbackMode());
+    }
+
+    @Test public void unrelatedNavigationCannotResetAnOwnedPlaylistSession() {
+        QueuePlaybackMode.Session session = new QueuePlaybackMode.Session();
+        session.start(STORED);
+        session.cycleRepeat();
+        session.toggleShuffle();
+        QueuePlaybackMode.onNewVideo(new Video());
+        session.refresh(STORED);
+        assertTrue(session.isShuffling());
+        assertEquals(QueuePlaybackMode.Session.REPEAT_ALL, session.repeat());
+    }
+
 }

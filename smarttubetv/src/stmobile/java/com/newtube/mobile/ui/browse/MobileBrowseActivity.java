@@ -1711,6 +1711,12 @@ public class MobileBrowseActivity extends MobileActivity
             return;
         }
 
+        if (video.hasVideo() && !video.isLocal()
+                && (mHeaderPlaylist != null || mCurrentSectionId == BrowseSection.WATCH_LATER_ID)) {
+            String title = mHeaderPlaylist != null ? mHeaderPlaylist.getTitle() : getString(R.string.header_watch_later);
+            com.newtube.mobile.ui.playback.SourcePlaybackLaunch.preparePlaylist(video, mCurrentVideos, mHeaderPlaylist, title,
+                    mCurrentSectionId == BrowseSection.WATCH_LATER_ID);
+        }
         mPresenter.onVideoItemSelected(video);
 
         // Cards without a videoId (playlists, mixes, channels) don't open the player - they kick

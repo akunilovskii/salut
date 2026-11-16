@@ -257,12 +257,12 @@ public class MobilePlaybackActivity extends MobileActivity
 
     // Watch page (portrait content column under the video).
     private View mWatchRoot;
-    private NestedScrollView mWatchScroll;
+    private PlaylistWatchScrollView mWatchScroll;
     private View mWatchContent;
     private TextView mWatchTitle;
     private TextView mWatchMeta;
     private View mWatchHeader;
-    private ImageView mWatchExpand;
+    private TextView mWatchExpand;
     private TextView mWatchDescription;
     private View mWatchActionsRow;
     private View mWatchChannelControls;
@@ -288,8 +288,10 @@ public class MobilePlaybackActivity extends MobileActivity
     private WatchSubscriptionControl mWatchSubscription;
     private MaterialButton mWatchSubscribe;
     private TextView mWatchRelatedLabel;
+    private PlaylistPlaybackHeader mPlaylistHeader;
+    private PlaylistHeaderInfo mSourceHeaderInfo;
     private View mRelatedSkeleton;
-    private RecyclerView mWatchRelated;
+    private MaxHeightRecyclerView mWatchRelated;
     private RelatedVideoAdapter mRelatedAdapter;
 
     // Comments + live chat entries. Keys come from the loaded metadata. Comments open the panel
@@ -341,6 +343,11 @@ public class MobilePlaybackActivity extends MobileActivity
     private final LinkedHashMap<Integer, VideoGroup> mSuggestionGroups = new LinkedHashMap<>();
     private final List<Video> mRelatedVideos = new ArrayList<>();
     private final VisibleNextQueue mVisibleNextQueue = new VisibleNextQueue();
+    private String mSourcePlaylistTitle;
+    private String mWatchHandle;
+    private boolean mSourcePageLoading;
+    private String mLastSourcePageKey;
+    private long mSourcePageRequestedAt;
     private Video mLastPagedVideo;
 
     // Queue card ("Playing from <playlist>"). The queue row is one of the suggestion groups: the
@@ -759,6 +766,7 @@ public class MobilePlaybackActivity extends MobileActivity
                 state -> YouTubeServiceManager.instance().getNotificationsService().setNotificationStateObserve(state),
                 this::onSubscribeTapped);
         mWatchRelatedLabel = findViewById(R.id.mobile_watch_related_label);
+        mPlaylistHeader = findViewById(R.id.mobile_watch_playlist_header);
         mRelatedSkeleton = findViewById(R.id.mobile_watch_related_skeleton);
         mWatchRelated = findViewById(R.id.mobile_watch_related);
         mQueueCard = findViewById(R.id.mobile_watch_queue_card);
@@ -1036,6 +1044,15 @@ public class MobilePlaybackActivity extends MobileActivity
         // dozen rows while the video starts) that empty frame stayed up ~1 s.
         mWatchRelated.setItemAnimator(null);
         mWatchRelated.setAdapter(mRelatedAdapter);
+        mWatchScroll.bindPlaylist(mPlaylistHeader, mWatchRelated);
+        mPlaylistHeader.setActions(this::cyclePlaylistRepeat, this::toggleShuffleMode);
+        mWatchRelated.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override public void onScrolled(@NonNull RecyclerView view, int dx, int dy) {
+                if (dy > 0 && !view.canScrollVertically(1) && hasSourcePlaylist()) {
+                    maybePageSourcePlaylist(true);
+                }
+            }
+        });
 
         // Queue list: same row layout and same click routing as Up next, but it scrolls INSIDE the
         // card (nested scrolling on + a max height) so a long playlist can't push the rest of the
@@ -4523,11 +4540,19 @@ public class MobilePlaybackActivity extends MobileActivity
     /** Toggle the SmartTube playback mode between Shuffle and All (default). Persisted in PlayerData. */
     /** Shuffling right now, whether that came from the stored mode or from this queue. */
     private boolean isShuffling() {
-        return PlayerData.instance(this).getPlaybackMode() == PlayerConstants.PLAYBACK_MODE_SHUFFLE
-                || QueuePlaybackMode.coversQueueOf(getVideo());
+        return hasSourcePlaylist() ? sourcePlaybackMode().isShuffling()
+                : PlayerData.instance(this).getPlaybackMode() == PlayerConstants.PLAYBACK_MODE_SHUFFLE
+                    || QueuePlaybackMode.coversQueueOf(getVideo());
     }
 
     private void toggleShuffleMode() {
+        if (hasSourcePlaylist()) {
+            sourcePlaybackMode().toggleShuffle();
+            mVisibleNextQueue.invalidateNext();
+            renderPlaylistHeader();
+            updatePipActions();
+            return;
+        }
         // Off when anything is shuffling - including a queue-scoped shuffle, which the write below
         // clears (PlayerData.setPlaybackMode drops the override). Reading only the stored mode
         // would turn a "stop shuffling" tap into "shuffle everything from now on".
@@ -6599,6 +6624,7 @@ public class MobilePlaybackActivity extends MobileActivity
 
     @Override
     public VideoGroup getSuggestionsByIndex(int index) {
+        if (hasSourcePlaylist()) return index == 0 ? mVisibleNextQueue.sourceGroup() : null;
         // Callers null-check this (see SuggestionsController.focusCurrentChapter).
         if (mRelatedVideos.isEmpty() || index < 0) {
             return null;
@@ -6639,7 +6665,9 @@ public class MobilePlaybackActivity extends MobileActivity
 
     @Override
     public Video getVisibleNextVideo() {
-        return mVisibleNextQueue.peek(mRelatedVideos);
+        QueuePlaybackMode.Session mode = sourcePlaybackMode();
+        return mVisibleNextQueue.peek(mRelatedVideos, isShuffling(), hasSourcePlaylist()
+                && mode.repeat() == QueuePlaybackMode.Session.REPEAT_ALL);
     }
 
     @Override
@@ -6649,10 +6677,86 @@ public class MobilePlaybackActivity extends MobileActivity
 
     @Override
     public void lockVisibleNextQueue() {
+        maybePageSourcePlaylist(false);
         mVisibleNextQueue.lock(mRelatedVideos);
         Video queued = Playlist.instance().getNext();
-        mVisibleNextQueue.expect(queued != null ? queued : getVisibleNextVideo());
+        mVisibleNextQueue.expect(queued != null ? queued : getVisibleNextVideo(), queued != null);
         mRelatedRenderGate.cancelPending();
+    }
+
+    @Override public boolean hasSourcePlaylist() {
+        return mVisibleNextQueue.hasPlaylist();
+    }
+
+    @Override public int getSourcePlaylistPlaybackMode(int storedMode) {
+        if (!hasSourcePlaylist()) return storedMode;
+        mVisibleNextQueue.playbackMode().refresh(storedMode);
+        int mode = mVisibleNextQueue.playbackMode().playbackMode();
+        // Play next interrupts a source repeat once, then returns to that source and its mode.
+        return mVisibleNextQueue.isQueueInterruption() && mode == PlayerConstants.PLAYBACK_MODE_ONE
+                ? PlayerConstants.PLAYBACK_MODE_ALL : mode;
+    }
+
+    private QueuePlaybackMode.Session sourcePlaybackMode() {
+        QueuePlaybackMode.Session mode = mVisibleNextQueue.playbackMode();
+        mode.refresh(PlayerData.instance(this).getPlaybackMode());
+        return mode;
+    }
+
+    private void startSourcePlaybackMode(Video video) {
+        mVisibleNextQueue.playbackMode().start(QueuePlaybackMode.apply(video,
+                PlayerData.instance(this).getPlaybackMode()));
+    }
+
+    private void cyclePlaylistRepeat() {
+        if (!hasSourcePlaylist()) return;
+        sourcePlaybackMode().cycleRepeat();
+        mVisibleNextQueue.invalidateNext();
+        renderPlaylistHeader();
+        updatePipActions();
+    }
+
+    private void renderPlaylistHeader() {
+        if (mPlaylistHeader == null) return;
+        mPlaylistHeader.setVisibility(hasSourcePlaylist() ? View.VISIBLE : View.GONE);
+        if (!hasSourcePlaylist()) return;
+        int size = mVisibleNextQueue.displayedVideos().size();
+        int total = mSourceHeaderInfo != null ? mSourceHeaderInfo.total(getVideo(), size) : size;
+        int index = mSourceHeaderInfo != null ? mSourceHeaderInfo.position(getVideo(),
+                mVisibleNextQueue.currentSourceIndex(), total) : mVisibleNextQueue.currentSourceIndex() + 1;
+        String title = !TextUtils.isEmpty(mSourcePlaylistTitle) ? mSourcePlaylistTitle : getString(R.string.playlist);
+        mPlaylistHeader.bind(title, mSourceHeaderInfo, index, total, sourcePlaybackMode());
+    }
+
+    @Override public boolean isSourcePlaylistLoading() {
+        return hasSourcePlaylist() && mSourcePageLoading;
+    }
+
+    @Override public void onSuggestionGroupLoadFinished(VideoGroup group) {
+        runOnUiThread(() -> {
+            VideoGroup source = mVisibleNextQueue.sourceGroup();
+            if (hasSourcePlaylist() && source != null && group != null && source.getId() == group.getId()) {
+                mSourcePageLoading = false;
+                // A canceled or failed page can be retried by Next or another scroll.
+                if (Helpers.equals(source.getNextPageKey(), mLastSourcePageKey)) mLastSourcePageKey = null;
+            }
+        });
+    }
+
+    private void maybePageSourcePlaylist(boolean fromScroll) {
+        if (!hasSourcePlaylist() || mSourcePageLoading || mPresenter == null) return;
+        if (!fromScroll && mVisibleNextQueue.remaining().size() > 2) return;
+        VideoGroup source = mVisibleNextQueue.sourceGroup();
+        String key = source != null ? source.getNextPageKey() : null;
+        if (key == null || key.isEmpty()) return;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (key.equals(mLastSourcePageKey) && (!fromScroll || now - mSourcePageRequestedAt < 3_000)) return;
+        List<Video> videos = mVisibleNextQueue.displayedVideos();
+        if (videos.isEmpty()) return;
+        mSourcePageLoading = true;
+        mLastSourcePageKey = key;
+        mSourcePageRequestedAt = now;
+        mPresenter.onScrollEnd(videos.get(videos.size() - 1));
     }
 
     @Override
@@ -6663,6 +6767,8 @@ public class MobilePlaybackActivity extends MobileActivity
                 return;
             }
             mRelatedRenderGate.cancelPending();
+            mPlaylistHeader.setVisibility(View.GONE);
+            mWatchScroll.setPlaylistMode(false);
             mSuggestionVideos.clear();
             mSuggestionGroups.clear();
             mRelatedVideos.clear();
@@ -6726,6 +6832,7 @@ public class MobilePlaybackActivity extends MobileActivity
     }
 
     private void showRelatedSkeleton() {
+        if (hasSourcePlaylist()) { hideRelatedSkeleton(); return; }
         if (mRelatedSkeleton == null) {
             return;
         }
@@ -6779,7 +6886,10 @@ public class MobilePlaybackActivity extends MobileActivity
     @Override
     public void setButtonState(int buttonId, int buttonState) {
         mButtonStates.put(buttonId, buttonState);
-        runOnUiThread(() -> updateButtonVisual(buttonId, buttonState));
+        runOnUiThread(() -> {
+            updateButtonVisual(buttonId, buttonState);
+            if (buttonId == R.id.action_repeat) renderPlaylistHeader();
+        });
     }
 
     @Override
@@ -7783,7 +7893,7 @@ public class MobilePlaybackActivity extends MobileActivity
             if (mCommentsPanel != null) {
                 mCommentsPanel.onVideoChanged(item.videoId);
             }
-            if (mWatchScroll != null) {
+            if (mWatchScroll != null && !hasSourcePlaylist()) {
                 mWatchScroll.scrollTo(0, 0);
             }
         }
@@ -7827,7 +7937,8 @@ public class MobilePlaybackActivity extends MobileActivity
                 : getString(R.string.mobile_watch_likes_count, mWatchLikes);
         String dislikes = TextUtils.isEmpty(mWatchDislikes) ? null
                 : getString(R.string.mobile_watch_dislikes_count, mWatchDislikes);
-        String line = WatchMetadataLine.format(mWatchAuthor, mWatchMetaDetails, likes, dislikes);
+        String line = WatchMetadataLine.format(!TextUtils.isEmpty(mWatchHandle) ? mWatchHandle : mWatchAuthor,
+                WatchMetadataLine.withoutAuthor(mWatchMetaDetails, mWatchAuthor), likes, dislikes);
         if (fade) setWatchTextFaded(mWatchMeta, line);
         else mWatchMeta.setText(line);
         mWatchAvatar.setContentDescription(!TextUtils.isEmpty(mWatchAuthor)
@@ -7840,12 +7951,15 @@ public class MobilePlaybackActivity extends MobileActivity
         mWatchDescription.setText(null);
         mWatchMeta.setText(null);
         mWatchAuthor = null;
+        mWatchHandle = null;
         mWatchMetaDetails = null;
         mWatchLikes = null;
         mWatchDislikes = null;
         mWatchNotificationStates = null;
         mWatchSubscription.reset();
-        mWatchMeta.setMaxLines(1);
+        mWatchMeta.setSingleLine(true);
+        mWatchTitle.setSingleLine(true);
+        mWatchExpand.setText(R.string.mobile_watch_more);
         // Hold the Comments entry during loading to keep recommendations from shifting.
         mChannelAvatar.bind(mWatchVideo != null ? mWatchVideo.channelId : null, null);
 
@@ -7879,6 +7993,7 @@ public class MobilePlaybackActivity extends MobileActivity
         // on the reused activity; a session-wide ready flag allowed all later opens to bind early.
         runOnUiThread(() -> {
             bindWatchMetadata(mWatchMetadataGate.offer(metadata));
+            if (getVideo() != null && Helpers.equals(getVideo().videoId, metadata.getVideoId())) renderPlaylistHeader();
         });
     }
 
@@ -7961,6 +8076,7 @@ public class MobilePlaybackActivity extends MobileActivity
             if (!TextUtils.isEmpty(metadata.getAuthor())) {
                 mWatchAuthor = metadata.getAuthor();
             }
+            mWatchHandle = metadata.getChannelHandle();
 
             mWatchNotificationStates = metadata.getNotificationStates();
             mWatchSubscription.bindChannel(metadata.getChannelId(), getVideo() != null ? getVideo().videoId : null);
@@ -8038,7 +8154,7 @@ public class MobilePlaybackActivity extends MobileActivity
     }
 
     private void toggleDescription() {
-        if (TextUtils.isEmpty(mWatchDescription.getText())) {
+        if (TextUtils.isEmpty(mWatchDescription.getText()) && TextUtils.isEmpty(mWatchTitle.getText())) {
             return;
         }
 
@@ -8053,8 +8169,11 @@ public class MobilePlaybackActivity extends MobileActivity
         mWatchDescription.setVisibility(mDescriptionExpanded ? View.VISIBLE : View.GONE);
         // Expanded: let the views/date line wrap so long localized dates (e.g. "29 de des. 2019"
         // behind a wordy label) are fully readable instead of ellipsized.
+        mWatchMeta.setSingleLine(!mDescriptionExpanded);
         mWatchMeta.setMaxLines(mDescriptionExpanded ? Integer.MAX_VALUE : 1);
-        mWatchExpand.animate().rotation(mDescriptionExpanded ? 180f : 0f).setDuration(180).start();
+        mWatchTitle.setSingleLine(!mDescriptionExpanded);
+        mWatchTitle.setMaxLines(mDescriptionExpanded ? Integer.MAX_VALUE : 1);
+        mWatchExpand.setText(mDescriptionExpanded ? R.string.mobile_watch_less : R.string.mobile_watch_more);
     }
 
     /** Route Like / Dislike / Subscribe through the presenter's onButtonClicked vocabulary. */
@@ -8311,7 +8430,11 @@ public class MobilePlaybackActivity extends MobileActivity
     private void onRelatedClicked(Video video, @Nullable ImageView thumbnail) {
         if (video != null && isVisibleRelatedVideo(video)) {
             mVisibleNextQueue.lock(mRelatedVideos);
-            mVisibleNextQueue.expect(video);
+            if (hasSourcePlaylist()) {
+                Playlist.instance().setCurrentFromSource(video);
+                mVisibleNextQueue.expectSource(video);
+            }
+            else mVisibleNextQueue.expect(video);
             mRelatedRenderGate.cancelPending();
         } else {
             mVisibleNextQueue.reset();
@@ -8346,12 +8469,13 @@ public class MobilePlaybackActivity extends MobileActivity
     private void showLockedNextVideos() {
         mRelatedRenderGate.cancelPending();
         mRelatedVideos.clear();
-        mRelatedVideos.addAll(mVisibleNextQueue.remaining());
+        mRelatedVideos.addAll(mVisibleNextQueue.displayedVideos());
         mQueueVideos.clear();
         if (mQueueCard != null) {
             mQueueCard.setVisibility(View.GONE);
         }
         submitRelatedWindow(this::hideRelatedSkeleton);
+        maybePageSourcePlaylist(false);
     }
 
     /** Watch-page channel row tap → the mobile channel screen. Same routing as the card menu's
@@ -8372,6 +8496,10 @@ public class MobilePlaybackActivity extends MobileActivity
     private void maybePageSuggestions() {
         // A temporarily empty adapter can look scrolled to the bottom while its model is already
         // populated. Do not let that layout callback bypass the first-frame rendering gate.
+        if (hasSourcePlaylist()) {
+            maybePageSourcePlaylist(false);
+            return;
+        }
         if (!mRelatedRenderGate.isReleased()) {
             return;
         }
@@ -8413,6 +8541,21 @@ public class MobilePlaybackActivity extends MobileActivity
         Video current = getVideo();
         String currentId = current != null ? current.videoId : null;
         Integer queueId = findQueueGroupId(current);
+        if (current != null && !TextUtils.isEmpty(current.getPlaylistId()) && queueId != null
+                && mVisibleNextQueue.startPlaylist(mSuggestionVideos.get(queueId), current)) {
+            VideoGroup group = mSuggestionGroups.get(queueId);
+            mSourcePlaylistTitle = group != null ? group.getTitle() : null;
+            Video identity = new Video();
+            identity.playlistId = current.getPlaylistId();
+            identity.playlistInfo = current.playlistInfo;
+            com.liskovsoft.mediaserviceinterfaces.oauth.Account account = MediaServiceManager.instance().getSelectedAccount();
+            mSourceHeaderInfo = PlaylistHeaderInfo.from(identity, mSourcePlaylistTitle, false,
+                    account != null ? account.getName() : null);
+            startSourcePlaybackMode(current);
+            showLockedNextVideos();
+            mWatchScroll.positionPlaylistItem(mVisibleNextQueue.sourceIndex(current));
+            return;
+        }
         boolean subscriptions = current != null && current.hasVideo() && current.belongsToSubscriptions()
                 && current.isSectionPlaylistEnabled(this);
 
@@ -8504,11 +8647,16 @@ public class MobilePlaybackActivity extends MobileActivity
     /** As {@link #submitRelatedWindow()}; {@code onCommitted} runs once the list shows the slice. */
     private void submitRelatedWindow(Runnable onCommitted) {
         if (mRelatedAdapter != null) {
-            int end = Math.min(mRelatedWindow, mRelatedVideos.size());
+            boolean playlist = hasSourcePlaylist();
+            mWatchRelated.setMaxHeight(0);
+            mWatchScroll.setPlaylistMode(playlist);
+            mRelatedAdapter.setCurrentVideoId(playlist && getVideo() != null ? getVideo().videoId : null);
+            int end = playlist ? mRelatedVideos.size() : Math.min(mRelatedWindow, mRelatedVideos.size());
             mRelatedAdapter.submitList(new ArrayList<>(mRelatedVideos.subList(0, end)), onCommitted);
         } else if (onCommitted != null) {
             onCommitted.run();
         }
+        renderPlaylistHeader();
         if (mWatchRelatedLabel != null && !mRelatedVideos.isEmpty()) {
             mWatchRelatedLabel.setVisibility(View.GONE);
         }
@@ -9030,7 +9178,7 @@ public class MobilePlaybackActivity extends MobileActivity
             mVideoArea.post(this::updatePipActions);
         }
 
-        List<Video> channelSource = ChannelPlaybackLaunch.take(item);
+        SourcePlaybackLaunch.Snapshot source = SourcePlaybackLaunch.takeSource(item);
 
         // Same keep-last-known-good rule as bindWatchVideo: a same-video rebind with an empty
         // title (bare error-reload Video) must not blank the controls title.
@@ -9052,13 +9200,26 @@ public class MobilePlaybackActivity extends MobileActivity
                 mTimeBar.cancelScrub();
             }
         }
-        if (channelSource != null && mVisibleNextQueue.startChannel(channelSource, item)) {
-            showLockedNextVideos();
+        if (source != null) {
+            mSourcePageLoading = false;
+            mLastSourcePageKey = null;
+            mSourcePlaylistTitle = source.title;
+            mSourceHeaderInfo = source.headerInfo;
+            boolean started = source.playlist
+                    ? mVisibleNextQueue.startPlaylist(source.videos, item)
+                    : mVisibleNextQueue.startChannel(source.videos, item);
+            if (started) {
+                if (source.playlist) startSourcePlaybackMode(item);
+                showLockedNextVideos();
+            }
         }
         if (!sameVideo || (item != null && !TextUtils.isEmpty(item.getTitleFull()))) {
             setTitle(item != null ? item.getTitleFull() : null);
         }
         bindWatchVideo(item);
+        if (!sameVideo && hasSourcePlaylist()) {
+            mWatchScroll.positionPlaylistItem(mVisibleNextQueue.sourceIndex(item));
+        }
 
         // LOADING STILL: a DIFFERENT video was just set on this (reused) view. The texture still
         // shows the previous video's last frame and the new audio starts as soon as it buffers,

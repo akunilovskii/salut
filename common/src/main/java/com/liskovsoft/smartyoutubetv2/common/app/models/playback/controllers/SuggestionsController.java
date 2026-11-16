@@ -599,6 +599,9 @@ public class SuggestionsController extends BasePlayerController {
         boolean hideWhenDone = showLoading || !sRowContinuationsDisabled;
 
         Disposable continueAction = contentService().continueGroupObserve(mediaGroup)
+                .doFinally(() -> {
+                    if (getPlayer() != null) getPlayer().onSuggestionGroupLoadFinished(group);
+                })
                 .subscribe(
                         continueMediaGroup -> {
                             if (hideWhenDone) {
@@ -790,7 +793,7 @@ public class SuggestionsController extends BasePlayerController {
             return true;
         }
         if (getPlayer().isVisibleNextQueueLocked()) {
-            return false;
+            return getPlayer().isSourcePlaylistLoading();
         }
         if (getVideo().belongsToSubscriptions() && getVideo().isSectionPlaylistEnabled(getContext())) {
             return mNextSectionVideo != null;
@@ -984,6 +987,7 @@ public class SuggestionsController extends BasePlayerController {
 
         mergePlaybackAndRemoteQueueIfNeeded(video, suggestions);
 
+        if (getPlayer().hasSourcePlaylist()) return;
         appendSectionPlaylistIfNeeded(video);
 
         if (suggestions == null) {

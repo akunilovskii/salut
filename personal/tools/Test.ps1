@@ -13,6 +13,7 @@ $Groups = @(
             'com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.VideoStateControllerPreviousTest',
             'com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.VideoStateControllerPositionTest',
             'com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SubscriptionsQueueTest',
+            'com.liskovsoft.smartyoutubetv2.common.app.models.playback.QueuePlaybackModeTest',
             'com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsControllerReopenTest',
             'com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsAvailabilityTest',
             'com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.ContextualSuggestionsTest',
@@ -30,7 +31,7 @@ $Groups = @(
     },
     @{
         Name = 'notification-provider'; Task = ':youtubeapi:testDebugUnitTest'
-        Suites = @('com.liskovsoft.youtubeapi.notifications.PhoneNotificationPreferenceTest')
+        Suites = @('com.liskovsoft.youtubeapi.notifications.PhoneNotificationPreferenceTest', 'com.liskovsoft.youtubeapi.next.v1.models.VideoOwnerHandleTest')
         Results = 'MediaServiceCore\youtubeapi\build\test-results\testDebugUnitTest'
     },
     @{
@@ -83,6 +84,8 @@ $Groups = @(
             'com.newtube.mobile.PhoneSpeedPrefsTest',
             'com.newtube.mobile.ui.playback.VisibleNextQueueTest',
             'com.newtube.mobile.ui.playback.WatchHeaderTest',
+            'com.newtube.mobile.ui.playback.PlaylistWatchScrollViewTest',
+            'com.newtube.mobile.ui.playback.PlaylistPlaybackHeaderTest',
             'com.newtube.mobile.ui.playback.WatchActionsLayoutTest',
             'com.newtube.mobile.ui.playback.WatchMetadataLineTest',
             'com.newtube.mobile.ui.playback.WatchSubscriptionControlTest',

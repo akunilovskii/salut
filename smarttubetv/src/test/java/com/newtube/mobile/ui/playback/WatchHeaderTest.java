@@ -58,10 +58,10 @@ public class WatchHeaderTest {
         float scaledDensity = mHeader.getResources().getDisplayMetrics().scaledDensity;
         assertEquals(Math.round(18 * scaledDensity), mTitle.getTextSize(), 0.01f);
         assertEquals(Math.round(12 * scaledDensity), mMeta.getTextSize(), 0.01f);
-        assertEquals(3, mTitle.getMaxLines());
+        assertEquals(1, mTitle.getMaxLines());
     }
 
-    @Test public void titleMetadataChevronAndPaddingRouteToOneClickAction() {
+    @Test public void titleMetadataMoreAndPaddingRouteToOneClickAction() {
         measure(411);
         int[] clicks = {0};
         mHeader.setOnClickListener(view -> clicks[0]++);
@@ -79,30 +79,53 @@ public class WatchHeaderTest {
         assertTrue(mHeader.getHeight() >= 48);
     }
 
-    @Test public void longTitlesStayAboveMetadataAndKeepTheThreeLineLimit() {
+    @Test public void longTitlesStayOnOneLineWithoutIncreasingTheHeaderHeight() {
         measure(320);
         int shortHeight = mHeader.getHeight();
         mTitle.setText("A very long title with enough words to fill several lines in a narrow phone "
                 + "while leaving all of the video details and the description action reachable");
         measure(320);
-        assertEquals(3, mTitle.getLineCount());
-        assertTrue(mHeader.getHeight() > shortHeight);
+        assertEquals(1, mTitle.getLineCount());
+        assertEquals(shortHeight, mHeader.getHeight());
         assertTrue(mTitle.getBottom() <= mHeader.findViewById(R.id.mobile_watch_meta_row).getTop());
         assertEquals(1, mMeta.getMaxLines());
     }
 
-    @Test public void largerTextAndExpandedMetadataGrowWithoutCoveringTheChevron() {
+    @Test public void largerTextAndExpandedMetadataKeepMoreReachable() {
         inflateHeader(1.5f);
         mTitle.setText("A longer video title at a larger accessibility font size");
         mMeta.setText("A long localized line of video views, publication date and additional details");
         measure(320);
         int collapsedHeight = mHeader.getHeight();
+        mMeta.setSingleLine(false);
         mMeta.setMaxLines(Integer.MAX_VALUE);
         measure(320);
         assertTrue(mMeta.getLineCount() > 1);
         assertTrue(mHeader.getHeight() > collapsedHeight);
-        assertTrue(mTitle.getLineCount() <= 3);
+        assertEquals(1, mTitle.getLineCount());
         assertTrue(mMeta.getRight() <= mHeader.findViewById(R.id.mobile_watch_expand).getLeft());
+    }
+
+    @Test public void overflowingTitleFadesItsInkAtTheRightEdgeWithoutAnOpaqueOverlay() {
+        mTitle.setText("MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
+        measure(320);
+        android.graphics.Bitmap faded = android.graphics.Bitmap.createBitmap(mTitle.getWidth(), mTitle.getHeight(),
+                android.graphics.Bitmap.Config.ARGB_8888);
+        mTitle.draw(new android.graphics.Canvas(faded));
+        assertTrue(mTitle.getEllipsize() == null);
+        mTitle.setMaxLines(2); // Same single-line layout, with the overflow mask disabled.
+        measure(320);
+        android.graphics.Bitmap original = android.graphics.Bitmap.createBitmap(mTitle.getWidth(), mTitle.getHeight(),
+                android.graphics.Bitmap.Config.ARGB_8888);
+        mTitle.draw(new android.graphics.Canvas(original));
+        long originalAlpha = 0, fadedAlpha = 0;
+        for (int x = original.getWidth() - 24; x < original.getWidth(); x++) {
+            for (int y = 0; y < original.getHeight(); y++) {
+                originalAlpha += android.graphics.Color.alpha(original.getPixel(x, y));
+                fadedAlpha += android.graphics.Color.alpha(faded.getPixel(x, y));
+            }
+        }
+        assertTrue("Only the overflowing text ink should fade", fadedAlpha < originalAlpha);
     }
 
     private void inflateHeader(float fontScale) {

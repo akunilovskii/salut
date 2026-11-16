@@ -10,6 +10,8 @@ public class VideoOwner {
     private List<Thumbnail> mThumbnails;
     @JsonPath({"$.title.simpleText", "$.title.runs[0].text"})
     private String mVideoAuthor;
+    @JsonPath("$.navigationEndpoint.browseEndpoint.canonicalBaseUrl")
+    private String mChannelUrl;
     @JsonPath({"$.subscriptionButton.subscribed", "$.subscribed", "$.subscribeButton.subscribeButtonRenderer.subscribed"})
     private Boolean mIsSubscribed;
     @JsonPath({"$.navigationEndpoint.browseEndpoint.browseId", "$.subscribeButton.subscribeButtonRenderer.channelId"})
@@ -20,6 +22,10 @@ public class VideoOwner {
     private String mSubscriberCountLong;
     @JsonPath({"$.shortSubscriberCountText.runs[0].text", "$.subscribeButton.subscribeButtonRenderer.shortSubscriberCountText.runs[0].text"})
     private String mSubscriberCountShort;
+
+    public String getChannelHandle() {
+        return mChannelUrl != null && mChannelUrl.startsWith("/@") ? mChannelUrl.substring(1) : null;
+    }
 
     public String getVideoAuthor() {
         return mVideoAuthor;

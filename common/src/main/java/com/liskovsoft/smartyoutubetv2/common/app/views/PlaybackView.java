@@ -4,6 +4,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.listener.PlayerEventListener;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 
 public interface PlaybackView extends PlayerManager {
     void showProgressBar(boolean show);
@@ -15,6 +16,12 @@ public interface PlaybackView extends PlayerManager {
 
     /** Keep that visible order while advancing through it. */
     default void lockVisibleNextQueue() {}
+
+    /** Mobile source playlists retain their full displayed list independently of /next metadata. */
+    default boolean hasSourcePlaylist() { return false; }
+    default int getSourcePlaylistPlaybackMode(int storedMode) { return storedMode; }
+    default boolean isSourcePlaylistLoading() { return false; }
+    default void onSuggestionGroupLoadFinished(VideoGroup group) {}
 
     /**
      * NEWTUBE(mobile-ttff): deliver the single {@link MediaItemMetadata} that

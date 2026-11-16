@@ -20,6 +20,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerC
  */
 public final class QueuePlaybackMode {
     private static String sPlaylistId;
+    private static long sExplicitModeRevision;
 
     private QueuePlaybackMode() {}
 
@@ -34,6 +35,7 @@ public final class QueuePlaybackMode {
      */
     public static void clear() {
         sPlaylistId = null;
+        sExplicitModeRevision++;
     }
 
     public static boolean isArmed() {
@@ -75,4 +77,50 @@ public final class QueuePlaybackMode {
     public static int apply(Video video, int storedMode) {
         return coversQueueOf(video) ? PlayerConstants.PLAYBACK_MODE_SHUFFLE : storedMode;
     }
+    /** Independent transient controls owned by one source-playlist playback session. */
+    public static final class Session {
+        public static final int REPEAT_OFF = 0;
+        public static final int REPEAT_ALL = 1;
+        public static final int REPEAT_ONE = 2;
+        private int mInheritedMode = PlayerConstants.PLAYBACK_MODE_ALL;
+        private Integer mRepeatOverride;
+        private Boolean mShuffleOverride;
+        private long mRevision;
+
+        public void start(int effectiveMode) {
+            mInheritedMode = effectiveMode;
+            mRepeatOverride = null;
+            mShuffleOverride = null;
+            mRevision = sExplicitModeRevision;
+        }
+
+        public void refresh(int storedMode) {
+            // Choosing a mode explicitly in the existing global picker also applies here.
+            // Merely opening another video or reading a setting must not reset these controls.
+            if (mRevision != sExplicitModeRevision) start(storedMode);
+        }
+
+        public int repeat() {
+            return mRepeatOverride != null ? mRepeatOverride
+                    : mInheritedMode == PlayerConstants.PLAYBACK_MODE_ONE ? REPEAT_ONE : REPEAT_OFF;
+        }
+
+        public boolean isShuffling() {
+            return mShuffleOverride != null ? mShuffleOverride
+                    : mInheritedMode == PlayerConstants.PLAYBACK_MODE_SHUFFLE;
+        }
+
+        public void cycleRepeat() { mRepeatOverride = (repeat() + 1) % 3; }
+
+        public void toggleShuffle() { mShuffleOverride = !isShuffling(); }
+
+        public int playbackMode() {
+            if (repeat() == REPEAT_ONE) return PlayerConstants.PLAYBACK_MODE_ONE;
+            if (mRepeatOverride != null || mShuffleOverride != null) {
+                return isShuffling() ? PlayerConstants.PLAYBACK_MODE_SHUFFLE : PlayerConstants.PLAYBACK_MODE_ALL;
+            }
+            return mInheritedMode;
+        }
+    }
+
 }

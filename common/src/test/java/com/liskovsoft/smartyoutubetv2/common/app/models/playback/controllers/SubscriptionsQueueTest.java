@@ -233,6 +233,76 @@ public class SubscriptionsQueueTest {
         assertTrue(opens.isEmpty());
     }
 
+    @Test
+    public void exhaustedLockedWatchLaterCannotUseMetadataRecommendation() {
+        current.isSynced = true;
+        current.nextMediaItem = recommendation();
+        player = proxy(PlaybackView.class, (name, arguments, type) ->
+                "isVisibleNextQueueLocked".equals(name) || "hasSourcePlaylist".equals(name)
+                        ? true : defaultValue(type));
+        List<String> opens = new ArrayList<>();
+        loader(opens).loadNext();
+        assertTrue(opens.isEmpty());
+        assertFalse(controller.hasNext());
+    }
+
+    @Test
+    public void finishPlaylistModeContinuesThroughLockedWatchLaterSource() {
+        Video following = video("following");
+        player = proxy(PlaybackView.class, (name, arguments, type) -> {
+            if ("isVisibleNextQueueLocked".equals(name) || "hasSourcePlaylist".equals(name)) return true;
+            if ("getSourcePlaylistPlaybackMode".equals(name)) return arguments[0];
+            if ("getVisibleNextVideo".equals(name)) return following;
+            return defaultValue(type);
+        });
+        PlayerData.instance(context).setPlaybackMode(PlayerConstants.PLAYBACK_MODE_LIST);
+        List<String> opens = new ArrayList<>();
+        loader(opens).onPlayEnd();
+        assertEquals(Arrays.asList("following"), opens);
+    }
+
+    @Test
+    public void pendingSourcePageCountsAsNextWithoutUsingRecommendations() {
+        current.nextMediaItem = recommendation();
+        player = proxy(PlaybackView.class, (name, arguments, type) ->
+                "isVisibleNextQueueLocked".equals(name) || "isSourcePlaylistLoading".equals(name)
+                        ? true : defaultValue(type));
+        assertTrue(controller.hasNext());
+        assertNull(controller.getNext());
+    }
+
+    @Test
+    public void selectingAQueuedSourceRowMatchesItsIdAcrossPlaylistContexts() {
+        Playlist.instance().setCurrent(video("previous"));
+        Video queued = video("selected");
+        queued.fromQueue = true;
+        Playlist.instance().next(queued);
+        Video selected = video("selected");
+        selected.playlistId = "PLchosen";
+        Playlist.instance().setCurrentFromSource(selected);
+        assertSame(selected, Playlist.instance().getCurrent());
+        assertNull(Playlist.instance().getNext());
+    }
+
+    @Test public void sourceRepeatOneOverridesTheInheritedGlobalModeAndKeepsPlayNextPriority() {
+        PlayerData.instance(context).setPlaybackMode(PlayerConstants.PLAYBACK_MODE_ALL);
+        List<Long> positions = new ArrayList<>();
+        player = proxy(PlaybackView.class, (name, arguments, type) -> {
+            if ("hasSourcePlaylist".equals(name)) return true;
+            if ("getSourcePlaylistPlaybackMode".equals(name)) return PlayerConstants.PLAYBACK_MODE_ONE;
+            if ("setPositionMs".equals(name)) positions.add((Long) arguments[0]);
+            return defaultValue(type);
+        });
+        List<String> opens = new ArrayList<>();
+        loader(opens).onPlayEnd();
+        assertEquals(Arrays.asList(0L), positions);
+        assertTrue(opens.isEmpty());
+        enqueueNext();
+        loader(opens).onPlayEnd();
+        assertEquals(Arrays.asList("requested"), opens);
+        assertEquals(PlayerConstants.PLAYBACK_MODE_ALL, PlayerData.instance(context).getPlaybackMode());
+    }
+
     private VideoLoaderController loader(List<String> opens) {
         PlayerEventListener listener = proxy(PlayerEventListener.class, (name, arguments, type) -> {
             if ("onNewVideo".equals(name)) opens.add(((Video) arguments[0]).videoId);

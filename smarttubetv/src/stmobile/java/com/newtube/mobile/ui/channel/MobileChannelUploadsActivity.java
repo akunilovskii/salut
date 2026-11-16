@@ -1,7 +1,7 @@
 package com.newtube.mobile.ui.channel;
 
 import com.newtube.mobile.ui.common.MobileSnackbar;
-import com.newtube.mobile.ui.playback.ChannelPlaybackLaunch;
+import com.newtube.mobile.ui.playback.SourcePlaybackLaunch;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -324,8 +324,11 @@ public class MobileChannelUploadsActivity extends MobileActivity
     private void onVideoClicked(Video video) {
         if (mPresenter != null) {
             Video opener = mPresenter.getChannel();
-            if (opener != null && opener.getPlaylistId() == null) {
-                ChannelPlaybackLaunch.prepare(video, mAdapter.getCurrentList());
+            if (opener != null && opener.getPlaylistId() != null && video.hasVideo()) {
+                video = withPlaylistContext(video);
+                SourcePlaybackLaunch.preparePlaylist(video, mVideos, opener, opener.getTitle(), false);
+            } else if (opener != null && opener.getPlaylistId() == null) {
+                SourcePlaybackLaunch.prepare(video, mAdapter.getCurrentList());
             }
             mPresenter.onVideoItemClicked(video);
         }

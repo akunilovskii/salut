@@ -143,7 +143,7 @@
         "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/common/MobileSnackbar.java",
         "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/dialogs/menu/BaseMenuPresenter.java",
         "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/channel/ChannelTitleFade.java",
-        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/ChannelPlaybackLaunch.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/SourcePlaybackLaunch.java",
         "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java",
         "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"
       ],
@@ -198,10 +198,10 @@
     },
     {
       "id": "recommendations-by-source",
-      "behavior": "The phone's existing Hide Up next switch is labeled Recommendations by source and retains its saved value. When enabled, YouTube recommendations are allowed for Home, search and external video links, and hidden for curated lists, History, Subscriptions and channels. Recommendation hops, explicit queue interruptions and engine reloads retain the viewing context. Opening a different source replaces it. Source lists, collapsible playlist cards, Play next priority and child-mode restrictions remain intact. Disabling the switch restores recommendations for all sources; TV keeps its existing global hide behavior.",
+      "behavior": "The phone's existing Hide Up next switch is labeled Limit recommendations and retains its saved value. When enabled, YouTube recommendations are allowed for Home, search and external video links, and hidden for curated lists, History, Subscriptions and channels. Recommendation hops, explicit queue interruptions and engine reloads retain the viewing context. Opening a different source replaces it. Source lists, Play next priority and child-mode restrictions remain intact. Real playlists use the shared source-only list independently of this recommendation filter. Disabling the switch restores recommendations outside the source-only playlist mode; TV keeps its existing global hide behavior.",
       "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java", "smarttubetv/src/stmobile/res/values/strings_settings.xml", "smarttubetv/src/stmobile/res/values-es/strings_settings.xml", "smarttubetv/src/stmobile/res/values-ru/strings_settings.xml", "smarttubetv/src/stmobile/res/values/strings_settings_search.xml"],
       "tests": ["ContextualSuggestionsTest", "SubscriptionsQueueTest", "SuggestionsControllerReopenTest", "VisibleNextQueueTest"],
-      "checks": ["With the existing switch enabled, Home, search and external links show recommendations", "Curated sources keep their own list without YouTube recommendations", "Recommendation transitions and queue interruptions retain source context", "Reopening the same video from another source updates recommendation visibility", "Child mode and explicit Play next retain their existing priority", "Turning the switch off permits recommendations for all sources"]
+      "checks": ["With the existing switch enabled, Home, search and external links show recommendations", "Curated sources keep their own list without YouTube recommendations", "Recommendation transitions and queue interruptions retain source context", "Reopening the same video from another source updates recommendation visibility", "Child mode and explicit Play next retain their existing priority", "Turning the switch off permits recommendations outside source-only playlists"]
     },
     {
       "id": "global-speed-shortcut",
@@ -233,10 +233,10 @@
     },
     {
       "id": "portrait-watch-header",
-      "behavior": "The portrait title and views/date line form one compact description action with 12 dp side insets, 16 dp top padding and 4 dp bottom padding. The metadata row has a 4 dp top inset and 24 dp chevron. Title styling remains 18 sp medium with a three-line limit; metadata uses regular 12 sp and expands to wrap with the description. Taps anywhere in the header toggle the existing inline description, with empty descriptions remaining collapsed. The header has one accessibility description action and at least a 48 dp touch height.",
+      "behavior": "The portrait title and views/date line form one compact description action with 12 dp side insets, 16 dp top padding and 4 dp bottom padding. The metadata row has a 4 dp top inset and a fixed more action. Title styling remains 18 sp medium with one line and a short transparent edge fade. Metadata uses regular 12 sp in one line with a real channel handle when available and a fixed more action. Expanding the existing description reveals the full title and metadata. Taps anywhere in the header toggle the existing inline description, including long titles when the description is empty. The header has one accessibility description action and at least a 48 dp touch height.",
       "files": ["smarttubetv/src/stmobile/res/layout/mobile_watch_header.xml", "smarttubetv/src/stmobile/res/layout/activity_mobile_playback.xml", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java"],
       "tests": ["WatchHeaderTest"],
-      "checks": ["A one-line header matches the measured YouTube height at Pixel density and font scale", "Title, metadata, chevron and padding all toggle the same description", "Long titles retain the three-line limit", "Expanded metadata wraps without covering the chevron", "Larger text grows the header without clipping"]
+      "checks": ["A one-line header matches the measured YouTube height at Pixel density and font scale", "Title, metadata, chevron and padding all toggle the same description", "Long titles remain on one line and fade at the trailing edge without an opaque overlay", "Expanded metadata wraps without covering the more action", "Larger text grows the header without clipping"]
     },
     {
       "id": "feed-card-alignment",
@@ -301,7 +301,7 @@
     },
     {
       "id": "visible-next-queue",
-      "behavior": "On the mobile watch page, Next and autoplay choose explicit queue items first, otherwise the first video shown below the current one. Advancing removes the played entry while retaining the remaining visible order instead of replacing it with suggestions for the new video. Explicit queue interruptions preserve the remaining source rows. Selecting a visible video preserves the rows after that selection; opening an unrelated video starts a fresh list.",
+      "behavior": "On the mobile watch page, Next and autoplay choose explicit queue items first, otherwise the first video shown below the current one. Advancing removes the played entry while retaining the remaining visible order instead of replacing it with suggestions for the new video. Watch later retains its full source list with the current row highlighted and uses its source cursor for Next. Explicit queue interruptions preserve the remaining source rows. Selecting a visible video preserves the rows after that selection; opening an unrelated video starts a fresh list.",
       "files": ["common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/views/PlaybackView.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/SuggestionsController.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/controllers/VideoLoaderController.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java"],
       "tests": ["VisibleNextQueueTest"],
       "checks": ["From History, Watch later and Subscriptions, Next plays the first visible following row", "The remaining rows retain their order after each advance", "An unrelated video open starts a new suggestions list"]
@@ -450,6 +450,54 @@
       "files": ["smarttubetv/src/stmobile/java/com/newtube/mobile/subscriptions/SubscriptionUpdates.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/subscriptions/SubscriptionSeenStore.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/SubscriptionsIndicator.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/MobileBrowseActivity.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/presenters/BrowsePresenter.java", "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/views/BrowseView.java", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/settings/AppPages.java", "smarttubetv/src/stmobile/res/values/strings_mobile.xml", "smarttubetv/src/stmobile/res/values/strings_settings.xml", "smarttubetv/build.gradle", "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/browse/SubscriptionsDot.java", "smarttubetv/src/stmobile/res/drawable/ic_subscriptions_new_content.xml"],
       "tests": ["SubscriptionUpdatesTest", "SubscriptionSeenStoreTest", "NavigationTabsSettingsTest", "SubscriptionsDotTest"],
       "checks": ["Bottom tabs are History, Home, Watch later, Subscriptions, Account when all feed tabs are enabled", "Red dot matches YouTube color #FF0033, 12 dp overall circle, 2 dp rim and icon-relative position, with an accessible description", "The dot survives restart and background checks", "A tab tap alone cannot clear the dot before a successful network response", "Re-tapping Subscriptions forces refresh even with fresh cached content", "Acknowledged state persists and remains separate between accounts", "Settings tab switches follow the actual bottom-tab order", "Acknowledgment removes all red pixels from the rendered badge; new unacknowledged content can display it again"]
+    },
+    {
+      "id": "watch-later-player-source",
+      "behavior": "Opening a video from Watch later or another playlist immediately shows the already loaded full source below playback, with the current row highlighted. The playlist heading starts directly below the video, with details, actions and comments initially above the viewport. The selected row starts directly below that heading, or the list stops at its end if too few rows remain. Downward travel past the first row reveals details; upward travel hides details before scrolling rows. There is no collapsed source card or separate recommendation feed. Next and autoplay follow the source order after the current row, and stop at the end unless playlist repeat is enabled. Manual source selection preserves pending explicit queue items and resets the source cursor. Existing shuffle, repeat and pause modes remain available. Source pagination reuses the existing continuation API without recommendation skeletons. Channel feeds and ordinary recommendations retain their existing presentation.",
+      "files": [
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/SourcePlaybackLaunch.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/MobilePlaybackActivity.java",
+        "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/data/Playlist.java"
+      ],
+      "tests": [
+        "VisibleNextQueueTest",
+        "SubscriptionsQueueTest"
+      ],
+      "checks": [
+        "Opening a middle Watch later row immediately shows its full list and Now playing marker",
+        "No source accordion or separate recommendations appear, regardless of recommendation settings",
+        "Next follows the source and manual selection resets the cursor",
+        "Explicit Play next interrupts and source playback resumes",
+        "End of source stops instead of opening recommendations"
+      ]
+    },
+    {
+      "id": "playlist-header-playback-controls",
+      "behavior": "Source playlists share a pinned two-line heading with a drag marker, playlist title and current/total position, owner and known privacy icon. The total uses the playlist card or matching server metadata instead of only the loaded page. Watch later uses the selected account name rather than a composite provider author. Repeat and Shuffle replace Close at the right edge. Repeat cycles off, playlist and current video; shuffle is independent and both states are visible and accessible. These controls belong to the current source session and do not write global preferences. The session inherits the existing effective playback mode; an explicit choice in the global picker takes precedence. Repeat playlist wraps only after source pagination finishes. Explicit Play next interrupts once, preserves source controls and resumes the retained source. Other feeds retain their global playback modes.",
+      "files": [
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PlaylistPlaybackHeader.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/PlaylistHeaderInfo.java",
+        "smarttubetv/src/stmobile/res/layout/mobile_watch_playlist_heading.xml",
+        "common/src/main/java/com/liskovsoft/smartyoutubetv2/common/app/models/playback/QueuePlaybackMode.java",
+        "smarttubetv/src/stmobile/java/com/newtube/mobile/ui/playback/VisibleNextQueue.java"
+      ],
+      "tests": [
+        "PlaylistPlaybackHeaderTest",
+        "QueuePlaybackModeTest",
+        "VisibleNextQueueTest",
+        "SubscriptionsQueueTest"
+      ],
+      "checks": [
+        "Counter and both controls fit a 320 dp viewport with large text",
+        "Watch later displays the source account name and lock",
+        "The first loaded page never overwrites a known total",
+        "Repeat and shuffle can be enabled together and remain active across source transitions",
+        "Repeat playlist wraps from the last video to the first without recommendations",
+        "Source continuation completes before repeat wraps",
+        "Explicit queue interruptions retain the source cursor and independent controls",
+        "Leaving the source drops session-only controls without changing persisted settings"
+      ]
     }
   ]
 }

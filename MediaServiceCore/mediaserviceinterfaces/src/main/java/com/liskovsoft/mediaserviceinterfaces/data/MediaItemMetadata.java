@@ -10,6 +10,7 @@ public interface MediaItemMetadata {
     CharSequence getSecondTitle();
     String getDescription();
     String getAuthor();
+    default String getChannelHandle() { return null; }
     String getAuthorImageUrl();
     String getViewCount();
     String getLikeCount();

@@ -450,10 +450,15 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
-        Video next = current.belongsToSubscriptions() && current.isSectionPlaylistEnabled(getContext())
+        boolean sourceLocked = getPlayer() != null && getPlayer().isVisibleNextQueueLocked();
+        Video next = sourceLocked || (current.belongsToSubscriptions() && current.isSectionPlaylistEnabled(getContext()))
                 ? mSuggestionsController.getNext() : Video.from(current.nextMediaItem);
         if (next != null) {
+            if (sourceLocked) getPlayer().lockVisibleNextQueue();
             openVideoInt(next);
+        } else if (sourceLocked) {
+            if (getPlayer().isSourcePlaylistLoading()) Utils.postDelayed(mMetadataSync, 1_000);
+            else stopPlayback();
         } else if (!current.isSynced) { // Maybe there's nothing left. E.g. when casting from phone
             // Wait in a loop while suggestions have been loaded...
             if (showLoadingMsg) {
@@ -851,6 +856,11 @@ public class VideoLoaderController extends BasePlayerController {
                 loadNext();
                 break;
             case PlayerConstants.PLAYBACK_MODE_ONE:
+                if (getPlayer().hasSourcePlaylist() && mPlaylist.getNext() != null
+                        && !getPlayerTweaksData().isQueueRespectsPlaybackMode()) {
+                    loadNext();
+                    break;
+                }
                 if (VERSION.SDK_INT <= 19) {
                     // Fix frozen image on Android 4
                     restartEngine();
@@ -883,6 +893,7 @@ public class VideoLoaderController extends BasePlayerController {
             case PlayerConstants.PLAYBACK_MODE_LIST:
                 // if video has a playlist load next or restart playlist
                 if (video.hasNextPlaylist() || mPlaylist.getNext() != null
+                        || (getPlayer().hasSourcePlaylist() && mSuggestionsController.hasNext())
                         || (video.belongsToSubscriptions() && video.isSectionPlaylistEnabled(getContext())
                             && mSuggestionsController.getNext() != null)) {
                     loadNext();
@@ -1017,7 +1028,9 @@ public class VideoLoaderController extends BasePlayerController {
      */
     private int getPlaybackMode() {
         Video video = getVideo();
-        int playbackMode = QueuePlaybackMode.apply(video, getPlayerData().getPlaybackMode());
+        int playbackMode = getPlayer() != null && getPlayer().hasSourcePlaylist()
+                ? getPlayer().getSourcePlaylistPlaybackMode(getPlayerData().getPlaybackMode())
+                : QueuePlaybackMode.apply(video, getPlayerData().getPlaybackMode());
 
         if (video != null && video.finishOnEnded) {
             playbackMode = PlayerConstants.PLAYBACK_MODE_CLOSE;

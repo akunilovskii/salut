@@ -223,6 +223,26 @@ public class Playlist {
         }
     }
 
+    /** Select a source row without treating previously watched rows as pending queue entries. */
+    public void setCurrentFromSource(Video video) {
+        setCurrentFromSource(video, getAllAfterCurrent());
+    }
+
+    public void setCurrentFromSource(Video video, List<Video> following) {
+        if (Video.isEmpty(video)) return;
+        List<Video> pending = new ArrayList<>();
+        if (following != null) {
+            for (Video queued : following) {
+                if (queued.fromQueue && !java.util.Objects.equals(queued.videoId, video.videoId)) pending.add(queued);
+            }
+        }
+        removeAllAfterCurrent();
+        remove(video);
+        video.fromQueue = false;
+        setCurrent(video);
+        addAll(pending);
+    }
+
     public Video getCurrent() {
         if (mCurrentIndex < mPlaylist.size() && mCurrentIndex >= 0) {
             return mPlaylist.get(mCurrentIndex);

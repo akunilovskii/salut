@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <FrameLayout android:layout_width="match_parent" android:layout_height="12dp"
+        android:importantForAccessibility="no">
+        <View android:layout_width="40dp" android:layout_height="4dp" android:layout_gravity="center"
+            android:background="@drawable/bg_mobile_sheet_handle" />
+    </FrameLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="48dp" android:paddingStart="16dp" android:paddingBottom="4dp"
+        android:gravity="center_vertical" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/playlist_heading_details"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:paddingEnd="8dp" android:orientation="vertical" android:screenReaderFocusable="true">
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:baselineAligned="true">
+                <TextView android:id="@+id/playlist_heading_title"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:singleLine="true" android:ellipsize="end" android:textSize="20sp"
+                    android:fontFamily="sans-serif-medium" android:textColor="@color/mobile_color_on_surface" />
+                <TextView android:id="@+id/playlist_heading_position"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:paddingStart="4dp" android:singleLine="true" android:textSize="16sp"
+                    android:textColor="@color/mobile_color_on_surface_secondary" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/playlist_heading_owner_row"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:id="@+id/playlist_heading_owner"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:singleLine="true" android:ellipsize="end" android:textSize="12sp"
+                    android:textColor="@color/mobile_color_on_surface_secondary" />
+                <ImageView android:id="@+id/playlist_heading_privacy" android:layout_width="16dp"
+                    android:layout_height="16dp" android:layout_marginStart="4dp"
+                    android:tint="@color/mobile_color_on_surface_secondary" android:importantForAccessibility="no" />
+            </LinearLayout>
+        </LinearLayout>
+        <FrameLayout android:layout_width="40dp" android:layout_height="48dp">
+            <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/playlist_heading_repeat"
+                android:layout_width="match_parent" android:layout_height="match_parent"
+                android:paddingHorizontal="8dp" android:paddingVertical="12dp"
+                android:scaleType="centerInside" android:background="@drawable/bg_toolbar_touch"
+                android:src="@drawable/ic_playlist_repeat" android:tint="@color/mobile_color_on_surface" />
+            <TextView android:id="@+id/playlist_heading_repeat_one" android:layout_width="16dp"
+                android:layout_height="16dp" android:layout_gravity="center" android:gravity="center"
+                android:text="1" android:textSize="8sp" android:textStyle="bold" android:includeFontPadding="false"
+                android:textColor="@color/mobile_color_on_surface" android:importantForAccessibility="no" />
+            <View android:id="@+id/playlist_heading_repeat_dot" android:layout_width="3dp"
+                android:layout_height="3dp" android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="5dp" android:background="@drawable/bg_playlist_mode_dot"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="40dp" android:layout_height="48dp">
+            <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/playlist_heading_shuffle"
+                android:layout_width="match_parent" android:layout_height="match_parent"
+                android:paddingHorizontal="8dp" android:paddingVertical="12dp"
+                android:scaleType="centerInside" android:background="@drawable/bg_toolbar_touch"
+                android:src="@drawable/ic_playlist_shuffle" android:tint="@color/mobile_color_on_surface" />
+            <View android:id="@+id/playlist_heading_shuffle_dot" android:layout_width="3dp"
+                android:layout_height="3dp" android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="5dp" android:background="@drawable/bg_playlist_mode_dot"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+    </LinearLayout>
+</merge>
