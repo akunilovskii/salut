@@ -59,6 +59,7 @@ public class VideoLoaderControllerNextPrefetchTest {
                     switch (method.getName()) {
                         case "getVideo": return current;
                         case "isEmbed": return false;
+                        case "hasSourcePlaylist": return false;
                         case "isPlaying": return playing;
                         case "getDurationMs": return durationMs;
                         case "getPositionMs": return positionMs;
