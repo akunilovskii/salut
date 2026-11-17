@@ -81,6 +81,35 @@ jobs:
             MediaServiceCore/youtubeapi/build/test-results/
             build/maintenance/tests-*.log
 
+  benchmark:
+    if: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/workers') }}
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: microsoft
+          java-version: '21'
+      - name: Install Android platform
+        shell: pwsh
+        run: |
+          & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
+          if ($LASTEXITCODE) { throw 'Android platform installation failed' }
+      - name: Qualify full-suite worker reuse
+        shell: pwsh
+        run: ./personal/tools/Benchmark-CI.ps1
+      - name: Preserve benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ci-worker-benchmark
+          retention-days: 7
+          path: build/maintenance/ci-benchmark/
+
   release:
     if: github.repository == 'akunilovskii/salut' && startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     needs: test
