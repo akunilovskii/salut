@@ -1,9 +1,20 @@
-param([string]$ToolchainRoot)
+param(
+    [string]$ToolchainRoot,
+    [switch]$FullSuite,
+    [switch]$ForceExecution,
+    [switch]$ReusePhoneWorkers
+)
 
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $LogRoot = Join-Path $ProjectRoot 'build/maintenance'
 New-Item -ItemType Directory -Force -Path $LogRoot | Out-Null
+if ($ReusePhoneWorkers -and -not $IsLinux) {
+    throw 'Experimental phone test worker reuse is qualified on Linux only.'
+}
+$RunTimer = [Diagnostics.Stopwatch]::StartNew()
+$Measurements = @()
+$Completed = $false
 $Groups = @(
     @{
         Name = 'common'; Task = ':common:testDebugUnitTest'
@@ -100,9 +111,18 @@ $Groups = @(
         Results = 'smarttubetv/build/test-results/testStmobileDebugUnitTest'
     }
 )
+try {
 foreach ($Group in $Groups) {
+    $GroupTimer = [Diagnostics.Stopwatch]::StartNew()
     $TestArguments = @()
-    foreach ($Suite in $Group.Suites) { $TestArguments += @('--tests', $Suite) }
+    if (-not $FullSuite) {
+        foreach ($Suite in $Group.Suites) { $TestArguments += @('--tests', $Suite) }
+    }
+    if ($ForceExecution -or $ReusePhoneWorkers) {
+        $TestArguments += @('--init-script', (Join-Path $PSScriptRoot 'CI-TestExecution.init.gradle'))
+    }
+    if ($ForceExecution) { $TestArguments += '-PsalutForceTestExecution=true' }
+    if ($ReusePhoneWorkers) { $TestArguments += '-PsalutReusePhoneWorkers=true' }
     $LogPath = Join-Path $LogRoot ("tests-" + $Group.Name + '.log')
     try {
         & (Join-Path $PSScriptRoot 'Build.ps1') -Tasks @($Group.Task) -GradleArguments $TestArguments -ToolchainRoot $ToolchainRoot *> $LogPath
@@ -124,5 +144,42 @@ foreach ($Group in $Groups) {
         }
         $Total += [int]$Result.testsuite.tests
     }
-    Write-Output ($Group.Name + ': ' + $Total + ' tests passed. Log: ' + $LogPath)
+    $SuiteMeasurements = @()
+    $MeasuredSuites = if ($FullSuite) { @($Results.Keys | Sort-Object) } else { $Group.Suites }
+    foreach ($Suite in $MeasuredSuites) {
+        $Result = $Results[$Suite]
+        if ([int]$Result.testsuite.failures -ne 0 -or [int]$Result.testsuite.errors -ne 0) {
+            throw "Full-suite failure: $Suite"
+        }
+        $Cases = @($Result.testsuite.testcase | ForEach-Object {
+            $Outcome = if ($_.failure -or $_.error) { 'failed' } elseif ($null -ne $_.skipped) { 'skipped' } else { 'passed' }
+            @{ className = $_.GetAttribute('classname'); name = $_.GetAttribute('name'); outcome = $Outcome }
+        })
+        if ($Cases.Count -ne [int]$Result.testsuite.tests) { throw "Incomplete testcase inventory: $Suite" }
+        $SuiteMeasurements += @{ name = $Suite; cases = $Cases }
+    }
+    $Measurements += @{ name = $Group.Name; elapsedSeconds = $GroupTimer.Elapsed.TotalSeconds; suites = $SuiteMeasurements }
+    Write-Output ($Group.Name + ': ' + $Total + ' required tests passed. Log: ' + $LogPath)
+    if ($FullSuite) {
+        $Executed = @($SuiteMeasurements | ForEach-Object { $_.cases } | Where-Object outcome -eq 'passed').Count
+        $Skipped = @($SuiteMeasurements | ForEach-Object { $_.cases } | Where-Object outcome -eq 'skipped').Count
+        Write-Output ($Group.Name + ': unfiltered total ' + $Executed + ' passed, ' + $Skipped + ' skipped.')
+    }
+}
+$Completed = $true
+} finally {
+    $JavaVersion = 'unavailable'
+    if ($env:JAVA_HOME -and (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'release'))) {
+        $JavaRelease = Get-Content -LiteralPath (Join-Path $env:JAVA_HOME 'release') -Raw
+        $JavaVersion = [regex]::Match($JavaRelease, '(?m)^JAVA_VERSION="([^"]+)"').Groups[1].Value
+    }
+    $Metrics = @{
+        schemaVersion = 1; completed = $Completed; fullSuite = [bool]$FullSuite
+        workerMode = $(if ($ReusePhoneWorkers) { 'reuse' } else { 'isolated' })
+        forcedExecution = [bool]$ForceExecution; elapsedSeconds = $RunTimer.Elapsed.TotalSeconds
+        sourceRevision = $env:GITHUB_SHA; operatingSystem = [Runtime.InteropServices.RuntimeInformation]::OSDescription
+        javaVersion = $JavaVersion
+        groups = $Measurements
+    }
+    $Metrics | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $LogRoot 'test-metrics.json') -Encoding utf8
 }

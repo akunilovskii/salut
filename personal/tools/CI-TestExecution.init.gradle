@@ -1,0 +1,19 @@
+// Benchmark controls only. Normal builds keep their existing isolation policy.
+def forceExecution = gradle.startParameter.projectProperties['salutForceTestExecution'] == 'true'
+def reuseWorkers = gradle.startParameter.projectProperties['salutReusePhoneWorkers'] == 'true'
+if (reuseWorkers && !System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('linux')) {
+    throw new GradleException('Phone test worker reuse is experimental on Linux only.')
+}
+gradle.projectsEvaluated {
+    gradle.rootProject.allprojects {
+        tasks.withType(Test).configureEach {
+            if (forceExecution) {
+                outputs.upToDateWhen { false }
+                outputs.doNotCacheIf('Fresh test execution requested') { true }
+            }
+            if (reuseWorkers && project.name == 'smarttubetv') {
+                forkEvery = 0
+            }
+        }
+    }
+}
