@@ -15,6 +15,7 @@ on:
           - required
           - full-offline
           - worker-benchmark
+          - build-image
 
 permissions:
   contents: read
@@ -175,3 +176,41 @@ jobs:
           $assets = @(Get-ChildItem -LiteralPath $dist -File | ForEach-Object FullName)
           gh release create "$env:GITHUB_REF_NAME" @assets --repo "$env:GITHUB_REPOSITORY" --verify-tag --latest --title "Salut $($env:GITHUB_REF_NAME)" --notes-file 'build/maintenance/release-notes.md'
           if ($LASTEXITCODE) { throw 'Release publication failed' }
+
+  build-image:
+    if: ${{ github.repository == 'akunilovskii/salut' && github.event_name == 'workflow_dispatch' && inputs.validation == 'build-image' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish build environment
+        id: image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: personal/container
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/akunilovskii/salut-build:sha-${{ github.sha }}
+      - name: Record immutable image reference
+        shell: pwsh
+        env:
+          SALUT_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          New-Item -ItemType Directory -Force -Path build/maintenance | Out-Null
+          @{ image = "ghcr.io/akunilovskii/salut-build@$env:SALUT_IMAGE_DIGEST"; recipeSha256 = (Get-FileHash personal/container/Dockerfile -Algorithm SHA256).Hash.ToLowerInvariant() } | ConvertTo-Json | Set-Content build/maintenance/build-image.json -Encoding utf8
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: build-image-reference
+          retention-days: 30
+          path: build/maintenance/build-image.json
