@@ -68,6 +68,8 @@ def inventory(report, require_full=True):
 def compare(reports):
     if len(reports) < 2:
         raise ValueError('At least two execution reports are required')
+    if any(report.get('sourceDirty') for report in reports):
+        raise ValueError('Performance comparison requires clean source checkouts')
     reference = reports[0]
     if not reference.get('sourceRevision'):
         raise ValueError('A named source revision is required')
@@ -96,6 +98,8 @@ def compare(reports):
 
 
 def compare_cache(reports):
+    if any(report.get('sourceDirty') for report in reports):
+        raise ValueError('Performance comparison requires clean source checkouts')
     if len(reports) != 2 or not reports[0].get('sourceRevision'):
         raise ValueError('Two named-revision cache qualification reports are required')
     before, after = reports

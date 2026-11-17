@@ -1,11 +1,16 @@
 param(
     [string[]]$Tasks = @(':smarttubetv:assembleStmobileDebug'),
     [string[]]$GradleArguments = @(),
-    [string]$ToolchainRoot
+    [string]$ToolchainRoot,
+    [switch]$Native
 )
 
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+if (-not $Native -and -not $ToolchainRoot -and $env:SALUT_BUILD_CONTAINER -ne '1') {
+    & (Join-Path $PSScriptRoot 'Invoke-LinuxBuild.ps1') -Action Build -Tasks $Tasks -GradleArguments $GradleArguments
+    return
+}
 $Manifest = Get-Content -LiteralPath (Join-Path $ProjectRoot 'personal/manifest.json') -Raw | ConvertFrom-Json
 $JavaExecutable = if ($IsWindows) { 'java.exe' } else { 'java' }
 $KeyPath = if ($env:SALUT_SIGNING_KEY) { $env:SALUT_SIGNING_KEY } else { Join-Path $ProjectRoot $Manifest.application.key }
