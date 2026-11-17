@@ -56,12 +56,9 @@ jobs:
         env:
           SALUT_VALIDATION: ${{ inputs.validation || 'full-offline' }}
         run: |
-          $testArguments = @{ ForceExecution = $true }
+          $testArguments = @{}
           if ($env:SALUT_VALIDATION -eq 'required') {
             $testArguments.Fast = $true
-          } elseif ($env:SALUT_VALIDATION -eq 'full-offline') {
-            $testArguments.FullSuite = $true
-            $testArguments.OfflineOnly = $true
           }
           ./personal/tools/Test.ps1 @testArguments
       - name: Save trusted dependency cache

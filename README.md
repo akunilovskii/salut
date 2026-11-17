@@ -17,7 +17,7 @@ The public source includes the vendored SharedModules and MediaServiceCore depen
 ./personal/tools/Build.ps1
 ```
 
-The default test command runs the complete offline corpus, including every required regression suite. Use `-Fast` for the smaller required-only set, and `-ForceExecution` for a fresh run. `-FullSuite` explicitly includes live Google/YouTube integration checks, which need network access and, where applicable, test accounts; add `-OfflineOnly` to exclude that category. Live-only checks can also be selected on the youtubeapi Gradle test task with `-PsalutLiveServicesOnly=true`.
+The default test command runs the complete offline corpus, including every required regression suite. Tests execute freshly by default, matching CI. Use `-Fast` for the smaller required-only set; `-ForceExecution:$false` explicitly permits Gradle up-to-date reuse. `-FullSuite` explicitly includes live Google/YouTube integration checks, which need network access and, where applicable, test accounts; add `-OfflineOnly` to exclude that category. Live-only checks can also be selected on the youtubeapi Gradle test task with `-PsalutLiveServicesOnly=true`.
 
 Source stays in your checkout; Linux build output and caches use a Docker volume scoped to that checkout. Each local run exports its logs and testcase evidence under `build/maintenance/container-runs/`. Successful APK builds export to `smarttubetv/build/outputs/renamed_apks/`. Phone test JVMs reuse workers on Linux; `-IsolatePhoneWorkers` is available for validation.
 

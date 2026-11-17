@@ -2,7 +2,7 @@ param(
     [string]$ToolchainRoot,
     [switch]$FullSuite,
     [switch]$OfflineOnly,
-    [switch]$ForceExecution,
+    [switch]$ForceExecution = $true,
     [switch]$ReusePhoneWorkers,
     [switch]$IsolatePhoneWorkers,
     [switch]$Fast,
