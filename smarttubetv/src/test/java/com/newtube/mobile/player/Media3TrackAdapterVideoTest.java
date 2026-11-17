@@ -26,7 +26,8 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.ConscryptMode;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 28, manifest = Config.NONE, application = Application.class)
+@Config(sdk = 28, manifest = Config.NONE, application = Application.class,
+        shadows = Media3SeekBufferingTest.OfflineSources.class)
 @ConscryptMode(ConscryptMode.Mode.OFF)
 public class Media3TrackAdapterVideoTest {
     private DefaultTrackSelector selector;
