@@ -7,3 +7,7 @@ gradlew text eol=lf
 
 # Request snapshots describe LF-delimited text on every checkout platform.
 MediaServiceCore/youtubeapi/src/test/resources/golden/player-request/*.txt text eol=lf
+
+Dockerfile text eol=lf
+personal/tools/Invoke-LinuxBuild.ps1 text eol=lf
+personal/container/*.json text eol=lf

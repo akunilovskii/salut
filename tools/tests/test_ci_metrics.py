@@ -28,13 +28,18 @@ class MetricsTest(unittest.TestCase):
             with self.assertRaises(ValueError): compare([report('isolated'), changed])
 
     def test_incomplete_cached_failed_or_different_revision_is_rejected(self):
-        for field, value in [('completed', False), ('forcedExecution', False),
+        for field, value in [('completed', False), ('forcedExecution', False), ('sourceDirty', True),
                              ('fullSuite', False), ('sourceRevision', 'other'),
                              ('operatingSystem', 'Windows'), ('elapsedSeconds', float('nan'))]:
             changed = report('reuse'); changed[field] = value
             with self.assertRaises(ValueError): compare([report('isolated'), changed])
         changed = report('reuse'); changed['groups'][0]['suites'][0]['cases'][0]['outcome'] = 'failed'
         with self.assertRaises(ValueError): compare([report('isolated'), changed])
+
+    def test_cache_comparison_rejects_two_identically_dirty_checkouts(self):
+        cold, warm = report('isolated'), report('isolated', 90)
+        cold['sourceDirty'] = warm['sourceDirty'] = True
+        with self.assertRaises(ValueError): compare_cache([cold, warm])
 
     def test_offline_corpus_is_named_and_cannot_be_compared_with_unfiltered(self):
         isolated, reuse = report('isolated'), report('reuse', 90)

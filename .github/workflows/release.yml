@@ -10,7 +10,7 @@ on:
       validation:
         description: Validation scope (worker benchmark requires a ci-bench/workers branch)
         type: choice
-        default: required
+        default: full-offline
         options:
           - required
           - full-offline
@@ -27,6 +27,8 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/akunilovskii/salut-build@sha256:b78be3c132cf30006095144240ec6cb58f01141ac6ba9107ca866ccbbcff1146
     timeout-minutes: 45
     env:
       SALUT_CACHE_NAMESPACE: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/') && 'salut-benchmark-deps-v1' || 'salut-deps-v1' }}
@@ -48,23 +50,16 @@ jobs:
             build/robolectric-maven
           key: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle.properties', '**/gradle.lockfile', '**/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          distribution: microsoft
-          java-version: '21'
-      - name: Install Android platform
-        shell: pwsh
-        run: |
-          & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
-          if ($LASTEXITCODE) { throw 'Android platform installation failed' }
       - name: Check application
         id: application
         shell: pwsh
         env:
-          SALUT_VALIDATION: ${{ inputs.validation || 'required' }}
+          SALUT_VALIDATION: ${{ inputs.validation || 'full-offline' }}
         run: |
           $testArguments = @{ ForceExecution = $true }
-          if ($env:SALUT_VALIDATION -eq 'full-offline') {
+          if ($env:SALUT_VALIDATION -eq 'required') {
+            $testArguments.Fast = $true
+          } elseif ($env:SALUT_VALIDATION -eq 'full-offline') {
             $testArguments.FullSuite = $true
             $testArguments.OfflineOnly = $true
           }
@@ -102,20 +97,13 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.validation == 'worker-benchmark' && startsWith(github.ref, 'refs/heads/ci-bench/workers') }}
     needs: test
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/akunilovskii/salut-build@sha256:b78be3c132cf30006095144240ec6cb58f01141ac6ba9107ca866ccbbcff1146
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          distribution: microsoft
-          java-version: '21'
-      - name: Install Android platform
-        shell: pwsh
-        run: |
-          & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
-          if ($LASTEXITCODE) { throw 'Android platform installation failed' }
       - name: Qualify full-suite worker reuse
         shell: pwsh
         run: ./personal/tools/Benchmark-CI.ps1
@@ -131,6 +119,8 @@ jobs:
     if: github.repository == 'akunilovskii/salut' && startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     needs: test
     runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/akunilovskii/salut-build@sha256:b78be3c132cf30006095144240ec6cb58f01141ac6ba9107ca866ccbbcff1146
     timeout-minutes: 45
     permissions:
       contents: write
@@ -138,15 +128,6 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          distribution: microsoft
-          java-version: '21'
-      - name: Install Android platform
-        shell: pwsh
-        run: |
-          & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
-          if ($LASTEXITCODE) { throw 'Android platform installation failed' }
       - name: Prepare version-specific release notes
         shell: pwsh
         run: |
