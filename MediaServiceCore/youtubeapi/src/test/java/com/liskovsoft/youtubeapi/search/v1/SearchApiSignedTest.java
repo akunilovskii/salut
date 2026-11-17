@@ -18,6 +18,7 @@ import retrofit2.Call;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class SearchApiSignedTest extends SearchApiTestBase {
     private static final String SEARCH_TEXT = "thrones season 8 trailer";

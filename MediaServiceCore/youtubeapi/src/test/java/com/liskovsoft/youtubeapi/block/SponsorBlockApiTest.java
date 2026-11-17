@@ -17,6 +17,7 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class SponsorBlockApiTest {
     private static final String VIDEO_ID = "0e3GPea1Tyg"; // Mr. Beast

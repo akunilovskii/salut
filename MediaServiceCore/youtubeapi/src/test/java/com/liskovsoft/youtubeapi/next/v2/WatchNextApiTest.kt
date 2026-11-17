@@ -56,6 +56,7 @@ class WatchNextApiTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatWatchNextResultNotNull() {
         val watchNextResult = getWatchNextResult()
 
@@ -103,6 +104,7 @@ class WatchNextApiTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatWatchNextResultCanBeConverted() {
         val metadata = getMediaItemMetadataUnsigned()
 
@@ -111,6 +113,7 @@ class WatchNextApiTest {
 
     @Ignore("Latest Suggestions aren't continuable")
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatSuggestedContinuationNotNull() {
         val metadata = getMediaItemMetadataUnsigned()
 
@@ -120,6 +123,7 @@ class WatchNextApiTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatMetadataContainsRequiredFields() {
         val metadata = getMediaItemMetadataUnsigned();
 
@@ -127,6 +131,7 @@ class WatchNextApiTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatDislikesIsWorking() {
         val dislikes = mApi.getDislikes("KIeAtU-Toxw")
         val dislikesResult = RetrofitHelper.get(dislikes)
@@ -136,6 +141,7 @@ class WatchNextApiTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testUnlocalizedTitleIsWorking() {
         val wrapper = mApi.getUnlocalizedTitle("https://www.youtube.com/watch?v=KIeAtU-Toxw")
         val unlocalizedTitleResult = RetrofitHelper.get(wrapper)
@@ -144,6 +150,7 @@ class WatchNextApiTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testUnlocalizedShortTitleIsWorking() {
         val wrapper = mApi.getUnlocalizedTitle("https://www.youtube.com/shorts/SYdsEqmJs4k")
         val unlocalizedTitleResult = RetrofitHelper.get(wrapper)

@@ -32,11 +32,21 @@ def baseline(records):
         limits='Observed, changing workloads. Runner minutes are consumption proxies, not an invoice; storage is excluded.')
 
 
+def scope(report):
+    value = report.get('suiteScope', 'unfiltered' if report.get('fullSuite') else 'required')
+    if value not in ('required', 'unfiltered', 'offline'):
+        raise ValueError('Unknown corpus scope')
+    if (value == 'required') == bool(report.get('fullSuite')):
+        raise ValueError('Corpus scope disagrees with fullSuite')
+    return value
+
+
 def inventory(report, require_full=True):
     if report.get('schemaVersion') != 1 or not report.get('completed'):
         raise ValueError('Incomplete execution report')
     if (require_full and not report.get('fullSuite')) or not report.get('forcedExecution'):
-        raise ValueError('Comparison requires fresh, unfiltered suite execution')
+        raise ValueError('Comparison requires fresh, complete corpus execution')
+    scope(report)
     result = Counter()
     groups = set()
     for group in report['groups']:
@@ -66,8 +76,9 @@ def compare(reports):
     for report in reports:
         if (report.get('sourceRevision') != reference['sourceRevision']
                 or report.get('operatingSystem') != reference['operatingSystem']
-                or report.get('javaVersion') != reference.get('javaVersion')):
-            raise ValueError('Source revision or operating system changed')
+                or report.get('javaVersion') != reference.get('javaVersion')
+                or scope(report) != scope(reference)):
+            raise ValueError('Source revision, platform, Java or corpus scope changed')
         if inventory(report) != expected:
             raise ValueError('Test identities, counts or outcomes changed')
         duration = report['elapsedSeconds']
@@ -78,7 +89,7 @@ def compare(reports):
         raise ValueError('Both isolated and reuse modes are required')
     before, after = (median(modes[key]) for key in ('isolated', 'reuse'))
     return dict(sourceRevision=reference['sourceRevision'], inventoryMatches=True,
-        testCases=sum(expected.values()), skippedCases=sum(n for key, n in expected.items() if key[-1] == 'skipped'),
+        scope=scope(reference), testCases=sum(expected.values()), skippedCases=sum(n for key, n in expected.items() if key[-1] == 'skipped'),
         samples=modes, isolatedMedianSeconds=before, reuseMedianSeconds=after,
         elapsedReductionPercent=100 * (before - after) / before,
         limits='Same-host forced full-suite timings after warmup; not whole-workflow time, billing or regression recall.')
@@ -91,11 +102,13 @@ def compare_cache(reports):
     for field in ('sourceRevision', 'operatingSystem', 'javaVersion', 'workerMode', 'fullSuite'):
         if before.get(field) != after.get(field):
             raise ValueError('Cache comparison changed ' + field)
+    if scope(before) != scope(after):
+        raise ValueError('Cache comparison changed corpus scope')
     expected = inventory(before, require_full=False)
     if inventory(after, require_full=False) != expected:
         raise ValueError('Cache comparison changed test identities, counts or outcomes')
     return dict(sourceRevision=before['sourceRevision'], inventoryMatches=True,
-        scope='unfiltered' if before['fullSuite'] else 'required', testCases=sum(expected.values()),
+        scope=scope(before), testCases=sum(expected.values()),
         testExecutionSeconds=[before['elapsedSeconds'], after['elapsedSeconds']],
         limits='Cache restore/save and queue time are excluded here. Compare whole-job API timestamps before claiming feedback or compute savings.')
 

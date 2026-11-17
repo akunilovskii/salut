@@ -18,6 +18,7 @@ import org.robolectric.shadows.ShadowLog
 
 private const val videoId = "unfpnIF0OMo" // THE DOR BROTHERS
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
 @RunWith(RobolectricTestRunner::class)
 class CommentsApiTest {
     private lateinit var mCommentsApi: CommentsApi

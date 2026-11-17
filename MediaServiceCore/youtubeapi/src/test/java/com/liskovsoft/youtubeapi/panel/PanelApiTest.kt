@@ -16,6 +16,7 @@ import org.robolectric.shadows.ShadowLog
 private const val FEEDBACK_PANEL_ID = "PAcontext_menu"
 private const val FEEDBACK_PANEL_PARAMS = "-golCgtOTzZaQjlpRjhrYyCeAUITCAISD0ZFd2hhdF90b193YXRjaA%3D%3D"
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
 @RunWith(RobolectricTestRunner::class)
 class PanelApiTest {
     private lateinit var mPanelApi: PanelApi

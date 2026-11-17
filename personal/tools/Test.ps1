@@ -1,8 +1,10 @@
 param(
     [string]$ToolchainRoot,
     [switch]$FullSuite,
+    [switch]$OfflineOnly,
     [switch]$ForceExecution,
-    [switch]$ReusePhoneWorkers
+    [switch]$ReusePhoneWorkers,
+    [switch]$IsolatePhoneWorkers
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,6 +14,8 @@ New-Item -ItemType Directory -Force -Path $LogRoot | Out-Null
 if ($ReusePhoneWorkers -and -not $IsLinux) {
     throw 'Experimental phone test worker reuse is qualified on Linux only.'
 }
+if ($OfflineOnly -and -not $FullSuite) { throw 'OfflineOnly requires FullSuite; required checks cannot be filtered.' }
+if ($ReusePhoneWorkers -and $IsolatePhoneWorkers) { throw 'Choose one phone worker mode.' }
 $RunTimer = [Diagnostics.Stopwatch]::StartNew()
 $Measurements = @()
 $Completed = $false
@@ -118,11 +122,13 @@ foreach ($Group in $Groups) {
     if (-not $FullSuite) {
         foreach ($Suite in $Group.Suites) { $TestArguments += @('--tests', $Suite) }
     }
-    if ($ForceExecution -or $ReusePhoneWorkers) {
+    if ($ForceExecution -or $ReusePhoneWorkers -or $IsolatePhoneWorkers) {
         $TestArguments += @('--init-script', (Join-Path $PSScriptRoot 'CI-TestExecution.init.gradle'))
     }
+    if ($OfflineOnly) { $TestArguments += '-PsalutOfflineTests=true' }
     if ($ForceExecution) { $TestArguments += '-PsalutForceTestExecution=true' }
     if ($ReusePhoneWorkers) { $TestArguments += '-PsalutReusePhoneWorkers=true' }
+    if ($IsolatePhoneWorkers) { $TestArguments += '-PsalutIsolatePhoneWorkers=true' }
     $LogPath = Join-Path $LogRoot ("tests-" + $Group.Name + '.log')
     try {
         & (Join-Path $PSScriptRoot 'Build.ps1') -Tasks @($Group.Task) -GradleArguments $TestArguments -ToolchainRoot $ToolchainRoot *> $LogPath
@@ -163,7 +169,7 @@ foreach ($Group in $Groups) {
     if ($FullSuite) {
         $Executed = @($SuiteMeasurements | ForEach-Object { $_.cases } | Where-Object outcome -eq 'passed').Count
         $Skipped = @($SuiteMeasurements | ForEach-Object { $_.cases } | Where-Object outcome -eq 'skipped').Count
-        Write-Output ($Group.Name + ': unfiltered total ' + $Executed + ' passed, ' + $Skipped + ' skipped.')
+        Write-Output ($Group.Name + ': full-corpus total ' + $Executed + ' passed, ' + $Skipped + ' skipped.')
     }
 }
 $Completed = $true
@@ -175,6 +181,7 @@ $Completed = $true
     }
     $Metrics = @{
         schemaVersion = 1; completed = $Completed; fullSuite = [bool]$FullSuite
+        suiteScope = $(if ($OfflineOnly) { 'offline' } elseif ($FullSuite) { 'unfiltered' } else { 'required' })
         workerMode = $(if ($ReusePhoneWorkers) { 'reuse' } else { 'isolated' })
         forcedExecution = [bool]$ForceExecution; elapsedSeconds = $RunTimer.Elapsed.TotalSeconds
         sourceRevision = $env:GITHUB_SHA; operatingSystem = [Runtime.InteropServices.RuntimeInformation]::OSDescription
