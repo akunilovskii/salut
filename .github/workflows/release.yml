@@ -12,16 +12,32 @@ permissions:
 
 concurrency:
   group: salut-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      SALUT_CACHE_NAMESPACE: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/') && 'salut-benchmark-deps-v1' || 'salut-deps-v1' }}
+      SEGMENT_DOWNLOAD_TIMEOUT_MINS: '2'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+      - name: Check release tooling
+        run: python -X utf8 -m unittest discover -s tools/tests
+      - name: Restore dependency cache
+        id: dependencies
+        continue-on-error: true
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            build/gradle-user-home/caches/modules-2
+            build/gradle-user-home/wrapper
+            build/robolectric-maven
+          key: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle.properties', '**/gradle.lockfile', '**/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: microsoft
@@ -31,12 +47,28 @@ jobs:
         run: |
           & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37.0' 'build-tools;37.0.0'
           if ($LASTEXITCODE) { throw 'Android platform installation failed' }
-      - name: Check release tooling and application
+      - name: Check application
+        id: application
         shell: pwsh
         run: |
-          python -X utf8 -m unittest discover -s tools/tests
-          if ($LASTEXITCODE) { throw 'Release tooling tests failed' }
-          ./personal/tools/Test.ps1
+          ./personal/tools/Test.ps1 -ForceExecution
+      - name: Save trusted dependency cache
+        if: ${{ success() && steps.dependencies.outcome == 'success' && steps.dependencies.outputs.cache-hit != 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/'))) }}
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            build/gradle-user-home/caches/modules-2
+            build/gradle-user-home/wrapper
+            build/robolectric-maven
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Preserve execution evidence
+        if: ${{ always() && steps.application.outcome != 'skipped' && steps.application.outcome != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-execution-evidence
+          retention-days: 7
+          path: build/maintenance/test-metrics.json
       - name: Preserve failing test diagnostics
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -46,6 +78,7 @@ jobs:
           path: |
             smarttubetv/build/test-results/
             common/build/test-results/
+            MediaServiceCore/youtubeapi/build/test-results/
             build/maintenance/tests-*.log
 
   release:
