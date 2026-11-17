@@ -12,10 +12,11 @@ $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $LogRoot = Join-Path $ProjectRoot 'build/maintenance'
 New-Item -ItemType Directory -Force -Path $LogRoot | Out-Null
 if ($ReusePhoneWorkers -and -not $IsLinux) {
-    throw 'Experimental phone test worker reuse is qualified on Linux only.'
+    throw 'Phone test worker reuse is supported on Linux only.'
 }
 if ($OfflineOnly -and -not $FullSuite) { throw 'OfflineOnly requires FullSuite; required checks cannot be filtered.' }
 if ($ReusePhoneWorkers -and $IsolatePhoneWorkers) { throw 'Choose one phone worker mode.' }
+$UseSharedPhoneWorkers = $IsLinux -and -not $IsolatePhoneWorkers
 $RunTimer = [Diagnostics.Stopwatch]::StartNew()
 $Measurements = @()
 $Completed = $false
@@ -182,7 +183,7 @@ $Completed = $true
     $Metrics = @{
         schemaVersion = 1; completed = $Completed; fullSuite = [bool]$FullSuite
         suiteScope = $(if ($OfflineOnly) { 'offline' } elseif ($FullSuite) { 'unfiltered' } else { 'required' })
-        workerMode = $(if ($ReusePhoneWorkers) { 'reuse' } else { 'isolated' })
+        workerMode = $(if ($UseSharedPhoneWorkers) { 'reuse' } else { 'isolated' })
         forcedExecution = [bool]$ForceExecution; elapsedSeconds = $RunTimer.Elapsed.TotalSeconds
         sourceRevision = $env:GITHUB_SHA; operatingSystem = [Runtime.InteropServices.RuntimeInformation]::OSDescription
         javaVersion = $JavaVersion

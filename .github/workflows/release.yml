@@ -6,6 +6,15 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      validation:
+        description: Validation scope (worker benchmark requires a ci-bench/workers branch)
+        type: choice
+        default: required
+        options:
+          - required
+          - full-offline
+          - worker-benchmark
 
 permissions:
   contents: read
@@ -50,8 +59,15 @@ jobs:
       - name: Check application
         id: application
         shell: pwsh
+        env:
+          SALUT_VALIDATION: ${{ inputs.validation || 'required' }}
         run: |
-          ./personal/tools/Test.ps1 -ForceExecution
+          $testArguments = @{ ForceExecution = $true }
+          if ($env:SALUT_VALIDATION -eq 'full-offline') {
+            $testArguments.FullSuite = $true
+            $testArguments.OfflineOnly = $true
+          }
+          ./personal/tools/Test.ps1 @testArguments
       - name: Save trusted dependency cache
         if: ${{ success() && steps.dependencies.outcome == 'success' && steps.dependencies.outputs.cache-hit != 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/'))) }}
         continue-on-error: true
@@ -82,7 +98,7 @@ jobs:
             build/maintenance/tests-*.log
 
   benchmark:
-    if: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/workers') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.validation == 'worker-benchmark' && startsWith(github.ref, 'refs/heads/ci-bench/workers') }}
     needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 90
