@@ -1,8 +1,12 @@
-// Benchmark controls only. Normal builds keep their existing isolation policy.
+// Force execution and explicit worker modes for validation and benchmarks.
 def forceExecution = gradle.startParameter.projectProperties['salutForceTestExecution'] == 'true'
 def reuseWorkers = gradle.startParameter.projectProperties['salutReusePhoneWorkers'] == 'true'
+def isolateWorkers = gradle.startParameter.projectProperties['salutIsolatePhoneWorkers'] == 'true'
+if (reuseWorkers && isolateWorkers) {
+    throw new GradleException('Choose one phone test worker mode.')
+}
 if (reuseWorkers && !System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('linux')) {
-    throw new GradleException('Phone test worker reuse is experimental on Linux only.')
+    throw new GradleException('Phone test worker reuse is supported on Linux only.')
 }
 gradle.projectsEvaluated {
     gradle.rootProject.allprojects {
@@ -13,6 +17,9 @@ gradle.projectsEvaluated {
             }
             if (reuseWorkers && project.name == 'smarttubetv') {
                 forkEvery = 0
+            }
+            if (isolateWorkers && project.name == 'smarttubetv') {
+                forkEvery = 1
             }
         }
     }

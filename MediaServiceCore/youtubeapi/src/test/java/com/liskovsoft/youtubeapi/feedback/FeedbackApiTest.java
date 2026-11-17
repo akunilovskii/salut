@@ -14,6 +14,7 @@ import retrofit2.Call;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class FeedbackApiTest {
     private static final String SAMPLE_TOKEN = "AB9zfpIM9cPZbJlLPimo5tD6dMauYqUvQdwDIKB3mOBOnh1nwz5zztz28BZ75alUCedlk2Tfe6qzogkqvHWGY9rSEQNcMugsEAuapP5WDnszLi5GLCZg2D8uK2bSJbnGocCchc5KKoE2";

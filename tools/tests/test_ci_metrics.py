@@ -36,6 +36,17 @@ class MetricsTest(unittest.TestCase):
         changed = report('reuse'); changed['groups'][0]['suites'][0]['cases'][0]['outcome'] = 'failed'
         with self.assertRaises(ValueError): compare([report('isolated'), changed])
 
+    def test_offline_corpus_is_named_and_cannot_be_compared_with_unfiltered(self):
+        isolated, reuse = report('isolated'), report('reuse', 90)
+        isolated['suiteScope'] = reuse['suiteScope'] = 'offline'
+        self.assertEqual(compare([isolated, reuse])['scope'], 'offline')
+        reuse['suiteScope'] = 'unfiltered'
+        with self.assertRaises(ValueError): compare([isolated, reuse])
+        reuse['suiteScope'] = 'required'
+        with self.assertRaises(ValueError): compare([isolated, reuse])
+        reuse['suiteScope'] = 'unknown'
+        with self.assertRaises(ValueError): compare([isolated, reuse])
+
     def test_parallel_runner_usage_is_summed_but_feedback_time_is_not(self):
         jobs = [dict(conclusion='success', labels=['ubuntu-24.04'],
                      started_at='2026-11-16T00:00:10Z', completed_at='2026-11-16T00:01:10Z') for _ in range(2)]

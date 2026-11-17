@@ -5,15 +5,17 @@ if (-not $IsLinux) { throw 'Worker reuse qualification must run on Linux.' }
 $ProjectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $Output = Join-Path $ProjectRoot 'build/maintenance/ci-benchmark'
 New-Item -ItemType Directory -Path $Output -Force | Out-Null
-$Arguments = @{ FullSuite = $true; ForceExecution = $true }
+$Arguments = @{ FullSuite = $true; OfflineOnly = $true; ForceExecution = $true }
 if ($ToolchainRoot) { $Arguments.ToolchainRoot = $ToolchainRoot }
 # Exclude dependency downloads and initial compilation from the paired timings.
-# A failing broad suite stops qualification; it never becomes a smaller green run.
+# Run every offline test. Live service/account checks remain a separate explicit mode.
+# Any offline failure stops qualification; no per-trial selection is allowed.
 $Trials = @('warmup', 'isolated', 'reuse', 'reuse', 'isolated')
 $Measured = @()
 for ($Index = 0; $Index -lt $Trials.Count; $Index++) {
     $Mode = $Trials[$Index]
     $Arguments.ReusePhoneWorkers = $Mode -eq 'reuse'
+    $Arguments.IsolatePhoneWorkers = $Mode -ne 'reuse'
     $Trial = Join-Path $Output ("$Index-$Mode")
     New-Item -ItemType Directory -Path $Trial -Force | Out-Null
     try {

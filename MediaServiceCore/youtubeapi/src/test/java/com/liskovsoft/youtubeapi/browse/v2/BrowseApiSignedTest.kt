@@ -51,33 +51,41 @@ class BrowseApiSignedTest {
         mHomeMockService = MockUtils.mockWithGson(HomeApiMock::class.java)
         mHomeMockService2 = MockUtils.mockWithGson(HomeApiMock2::class.java)
         mSubscriptionsMockService = MockUtils.mockWithGson(SubscriptionsApiMock::class.java)
-        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
+        RetrofitOkHttpHelper.authHeaders.clear()
         RetrofitOkHttpHelper.disableCompression = true
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatSubsNotEmpty() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val subs = getSubscriptions()
 
         assertNotNull("Contains videos", subs?.getItems()?.getOrNull(0))
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatSubsContainShorts() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val subs = getSubscriptions()
 
         assertNotNull("Contains videos", subs?.getShortItems()?.getOrNull(0))
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatSubContainsFeedbackToken() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val subs = getSubscriptions()
 
         assertNotNull("Contains feedback token", subs?.getItems()?.getOrNull(0)?.getFeedbackToken())
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatSubsCanBeContinued() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val subs = getSubscriptions()
 
         assertNotNull("Contains continuation token", subs?.getContinuationToken())
@@ -167,14 +175,18 @@ class BrowseApiSignedTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatHomeNotEmpty() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val home = getHome()
 
         assertNotNull("Contains videos", home?.getItems()?.getOrNull(0))
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatHomeCanBeContinued() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val home = getHome()
 
         assertNotNull("Contains continuation token", home?.getContinuationToken())
@@ -183,7 +195,9 @@ class BrowseApiSignedTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatHomeContainsAllTokens() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val home = getHome()
 
         val item = home?.getItems()?.firstOrNull { it?.getFeedbackToken() != null || it?.getFeedbackEndpoint() != null }
@@ -195,7 +209,9 @@ class BrowseApiSignedTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatHomeContainsSections() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val home = getHome()
 
         val sections = home?.getShelves()
@@ -207,14 +223,18 @@ class BrowseApiSignedTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatKidsHomeNotEmpty() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val kidsHome = getKidsHome()
 
         assertNotNull("Contains sections", kidsHome?.getSections())
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatKidsHomeCanBeContinued() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val kidsHome = getKidsHome()
 
         kidsHome?.getSections()?.forEach {
@@ -226,7 +246,9 @@ class BrowseApiSignedTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testKidsMediaItemConversion() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val kidsHome = getKidsHome()
 
         val mediaGroup = KidsSectionMediaGroup(kidsHome?.getRootSection()!!, createOptions(MediaGroup.TYPE_KIDS_HOME))
@@ -235,14 +257,18 @@ class BrowseApiSignedTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testLikedMusicNotEmpty() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val likedMusic = getLikedMusic()
 
         assertNotNull("List not empty", likedMusic?.getItems())
     }
 
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testMyPlaylists() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val client = AppClient.TV
         val browse = mBrowseService.getBrowseResultTV(browseQuery = BrowseApiHelper.getMyPlaylistQuery(client))
 
@@ -253,7 +279,9 @@ class BrowseApiSignedTest {
 
     @Ignore("Doesn't work with tv")
     @Test
+    @org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
     fun testThatGuideNotEmpty() {
+        RetrofitOkHttpHelper.authHeaders["Authorization"] = TestHelpers.getAuthorization()
         val guide = getGuide()
 
         assertNotNull("Guide contains suggest token", guide?.getSuggestToken())

@@ -17,6 +17,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class PlaylistApiTest {
     private PlaylistApi mService;

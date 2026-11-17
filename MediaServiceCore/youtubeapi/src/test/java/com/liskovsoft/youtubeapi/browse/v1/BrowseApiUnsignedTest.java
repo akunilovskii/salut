@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Ignore("Old api")
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class BrowseApiUnsignedTest extends BrowseApiTestBase {
     private BrowseApi mService;

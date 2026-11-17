@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
 @RunWith(RobolectricTestRunner::class)
 class RssServiceTest {
     @Test

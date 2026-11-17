@@ -16,6 +16,7 @@ import org.robolectric.shadows.ShadowLog;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class GoogleSignInServiceTest {
     private SignInService mService;

@@ -14,7 +14,7 @@ import static org.junit.Assert.assertNull;
  * mdxSessionStatus parsing - the one payload the mdx shim exists for.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34) // newest SDK that runs on Java 17
+@Config(sdk = 34, manifest = Config.NONE, application = android.app.Application.class) // newest SDK that runs on Java 17
 // conscrypt-android on the app classpath breaks Robolectric's crypto setup; not needed here.
 @ConscryptMode(ConscryptMode.Mode.OFF)
 public class MdxScreenIdReaderTest {

@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class AuthApiTest {
     private static final String RAW_JSON_AUTH_DATA = "{\"client_id\":\"861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com\"," +

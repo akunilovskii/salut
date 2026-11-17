@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertNotNull;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class BindManagerTest {
     private static final String SCREEN_NAME = "TubeNext";
