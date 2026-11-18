@@ -25,7 +25,14 @@ RULES = (
 
 
 def git(*args):
-    return subprocess.check_output(["git", *args])
+    command = ["git"]
+    if workspace := os.environ.get("GITHUB_WORKSPACE"):
+        checkout = Path(workspace).resolve()
+        if checkout != Path.cwd().resolve():
+            raise ValueError("Expected to run from the GitHub checkout")
+        # Container jobs can read a checkout owned by the host runner.
+        command.extend(["-c", f"safe.directory={checkout.as_posix()}"])
+    return subprocess.check_output([*command, *args])
 
 
 def pr_diff(event, revision):

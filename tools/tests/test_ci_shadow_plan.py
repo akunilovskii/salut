@@ -1,7 +1,8 @@
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from tools.ci_shadow_plan import pr_diff, propose
+from tools.ci_shadow_plan import git, pr_diff, propose
 from test_ci_metrics import report
 
 
@@ -41,6 +42,18 @@ class ShadowPlanTest(unittest.TestCase):
         del self.report["groups"][0]["suites"][0]["required"]
         with self.assertRaises(ValueError):
             propose(["README.md"], self.report, "abc")
+
+    @patch("tools.ci_shadow_plan.subprocess.check_output")
+    def test_trusts_only_the_current_ci_checkout(self, check_output):
+        checkout = Path.cwd().resolve()
+        with patch.dict("os.environ", GITHUB_WORKSPACE=str(checkout)):
+            git("rev-list", "HEAD")
+        check_output.assert_called_once_with([
+            "git", "-c", f"safe.directory={checkout.as_posix()}", "rev-list", "HEAD"
+        ])
+        with patch.dict("os.environ", GITHUB_WORKSPACE=str(checkout / "other")):
+            with self.assertRaises(ValueError):
+                git("rev-list", "HEAD")
 
     @patch("tools.ci_shadow_plan.git")
     def test_diff_uses_verified_merge_parents_and_preserves_both_paths(self, git):
