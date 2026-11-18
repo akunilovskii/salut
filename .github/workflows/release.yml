@@ -37,6 +37,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 2
       - name: Check release tooling
         run: python -X utf8 -m unittest discover -s tools/tests
       - name: Restore dependency cache
@@ -61,6 +62,18 @@ jobs:
             $testArguments.Fast = $true
           }
           ./personal/tools/Test.ps1 @testArguments
+      - name: Report proposed PR test selection
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        run: python -X utf8 -m tools.ci_shadow_plan
+      - name: Preserve proposed PR test selection
+        if: ${{ always() && github.event_name == 'pull_request' && hashFiles('build/maintenance/shadow-test-plan.json') != '' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: shadow-test-plan
+          retention-days: 7
+          path: build/maintenance/shadow-test-plan.json
       - name: Save trusted dependency cache
         if: ${{ success() && steps.dependencies.outcome == 'success' && steps.dependencies.outputs.cache-hit != 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/ci-bench/'))) }}
         continue-on-error: true
