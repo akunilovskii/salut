@@ -296,10 +296,7 @@ public class MobileBrowseActivity extends MobileActivity
         setupErrorAction();
         setupSearchButton();
         setupCastButton();
-        findViewById(R.id.mobile_feedback_button).setOnClickListener(v -> mFeedback.show(this,
-                mCurrentSectionId == MediaGroup.TYPE_HOME && !mYouShowing ? "Home"
-                : mCurrentSectionId == MediaGroup.TYPE_SUBSCRIPTIONS && !mYouShowing ? "Subscriptions"
-                : mCurrentSectionId == BrowseSection.WATCH_LATER_ID && !mYouShowing ? "Watch later" : "Other"));
+        findViewById(R.id.mobile_feedback_button).setOnClickListener(v -> mFeedback.show(this));
 
         mPresenter = BrowsePresenter.instance(this);
         mPresenter.setView(this);

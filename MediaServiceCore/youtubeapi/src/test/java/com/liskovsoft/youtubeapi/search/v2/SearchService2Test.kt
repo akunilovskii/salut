@@ -16,6 +16,7 @@ import org.robolectric.shadows.ShadowLog
 private const val SEARCH_TEXT = "thrones season 8 trailer"
 private const val SEARCH_TEXT_SPECIAL_CHAR = "What's Trending"
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
 @RunWith(RobolectricTestRunner::class)
 internal class SearchService2Test : SearchServiceTestBase() {
     private lateinit var mSearchApi: SearchApi

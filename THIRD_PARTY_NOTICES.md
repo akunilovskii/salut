@@ -39,6 +39,8 @@ separately from their code, and NewTube uses it under those terms:
 - **filepicker-lib** (`filepicker-lib/`) — **Apache-2.0**.
   See [`filepicker-lib/LICENSE`](filepicker-lib/LICENSE).
 
+- **AndroidX AppCompat radio animations** (`smarttubetv/src/stmobile/res/anim/mobile_feedback_btn_radio_*` and related feedback drawables), copyright 2018 The Android Open Source Project, **Apache-2.0**. Adapted from AppCompat 1.7.1 with namespaced resource IDs and 100 ms state transitions; the radio artwork is unchanged. Original copyright headers are retained. The Apache 2.0 license text is included at [`filepicker-lib/LICENSE`](filepicker-lib/LICENSE).
+
 ## Submodules
 
 - **MediaServiceCore** and **SharedModules** — © yuliskov, **MIT** (same license

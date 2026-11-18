@@ -43,7 +43,8 @@ import java.util.List;
  * that is not ours, including raw ones that bypass the controller, cancels the snap.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 28, manifest = Config.NONE, application = Application.class)
+@Config(sdk = 28, manifest = Config.NONE, application = Application.class,
+        shadows = Media3SeekBufferingTest.OfflineSources.class)
 @ConscryptMode(ConscryptMode.Mode.OFF)
 public class Media3ResumeSeekTest {
     private static final SeekParameters PLAYER_DEFAULT = new SeekParameters(5_000_000, 1_000_000);

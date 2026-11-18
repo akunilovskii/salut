@@ -16,6 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowLog
 import org.junit.Assert.assertNotNull
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
 @RunWith(RobolectricTestRunner::class)
 class LiveChatApiTest {
     private lateinit var mLiveChatApi: LiveChatApi

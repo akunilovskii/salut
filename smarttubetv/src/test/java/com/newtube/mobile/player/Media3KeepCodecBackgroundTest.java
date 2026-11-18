@@ -34,7 +34,8 @@ import java.util.List;
  * error that drop can cause is swallowed instead of starting a recovery reload.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 28, manifest = Config.NONE, application = Application.class)
+@Config(sdk = 28, manifest = Config.NONE, application = Application.class,
+        shadows = Media3SeekBufferingTest.OfflineSources.class)
 @ConscryptMode(ConscryptMode.Mode.OFF)
 public class Media3KeepCodecBackgroundTest {
     private final List<Boolean> foregroundCalls = new ArrayList<>();

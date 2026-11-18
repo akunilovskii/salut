@@ -17,6 +17,7 @@ import retrofit2.Call;
 import static org.junit.Assert.assertNotNull;
 
 @Ignore("Old api")
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class WatchNextApiSignedTest extends WatchNextManagerTestBase {
     private WatchNextApi mManager;

@@ -1,8 +1,9 @@
 <resources>
-    <string name="feedback_title">Анонимная обратная связь</string>
-    <string name="feedback_note">Печатай или диктуй через клавиатуру. Не добавляй личные данные. Автоматически передаются только версии Salut и Android.</string>
-    <string name="feedback_screen">Экран</string>
-    <string name="feedback_function">Функция (необязательно)</string>
+    <string name="feedback_title">Обратная связь</string>
+    <string name="feedback_note">Печатай или диктуй через клавиатуру.\nНе добавляй личные данные.</string>
+    <string name="feedback_versions">Передаются: Salut %1$s · Android %2$s</string>
+    <string name="feedback_type">Тип (обязательно)</string>
+    <string name="feedback_screen">Экран (необязательно)</string>
     <string name="feedback_description">Описание (обязательно)</string>
     <string name="feedback_steps">Шаги (необязательно)</string>
     <string name="feedback_expected">Ожидается (необязательно)</string>
@@ -11,8 +12,9 @@
     <string name="feedback_rate">Слишком много запросов. Попробуй позже. Черновик сохранён.</string>
     <string name="feedback_failed">Доставка не подтверждена. Проверь подключение и попробуй снова. Черновик сохранён.</string>
     <string name="feedback_success">Сообщение принято. Спасибо.</string>
-    <string-array name="feedback_types"><item>Выбери тип (обязательно)</item><item>Ошибка</item><item>Улучшение</item></string-array>
+    <string-array name="feedback_types"><item>Ошибка</item><item>Улучшение</item></string-array>
     <string-array name="feedback_screens">
+        <item>Не указан</item>
         <item>Главная</item>
         <item>Подписки</item>
         <item>Смотреть позже</item>
