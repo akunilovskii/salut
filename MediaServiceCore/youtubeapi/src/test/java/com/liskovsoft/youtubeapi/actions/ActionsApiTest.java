@@ -14,6 +14,7 @@ import retrofit2.Call;
 
 import static org.junit.Assert.assertNotNull;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class ActionsApiTest {
     private ActionsApi mActionsManager;

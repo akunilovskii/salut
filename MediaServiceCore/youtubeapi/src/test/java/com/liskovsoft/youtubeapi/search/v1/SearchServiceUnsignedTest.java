@@ -10,6 +10,7 @@ import org.robolectric.shadows.ShadowLog;
 
 import static org.junit.Assert.assertTrue;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class SearchServiceUnsignedTest {
     private SearchService mService;

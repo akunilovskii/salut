@@ -8,7 +8,10 @@ import static org.junit.Assert.assertTrue;
 import android.app.Application;
 import android.net.Uri;
 
+import androidx.media3.exoplayer.dash.manifest.AdaptationSet;
 import androidx.media3.exoplayer.dash.manifest.DashManifest;
+import androidx.media3.exoplayer.dash.manifest.Period;
+import androidx.media3.exoplayer.dash.manifest.Representation;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.youtubeapi.common.helpers.AppClient;
@@ -137,7 +140,7 @@ public class DirectMpdEquivalenceTest {
                 return "null";
             }
             Object[] parsed = (Object[]) result;
-            return SourceBuildCpuBenchTest.describe((DashManifest) parsed[0]) + " wasDynamic=" + parsed[1];
+            return describe((DashManifest) parsed[0]) + " wasDynamic=" + parsed[1];
         } catch (Exception e) {
             return "error " + e.getClass().getName();
         }
@@ -214,5 +217,90 @@ public class DirectMpdEquivalenceTest {
                 .invoke(converter, new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
         info.setClient(name.startsWith("tvhtml5") ? AppClient.TV_TIZEN : AppClient.VISIONOS);
         return YouTubeMediaItemFormatInfo.from(info);
+    }
+
+    private static String describe(DashManifest manifest) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("mpd dynamic=").append(manifest.dynamic).append(" dur=").append(manifest.durationMs)
+                .append(" minBuf=").append(manifest.minBufferTimeMs).append(" ast=")
+                .append(manifest.availabilityStartTimeMs).append(" mup=").append(manifest.minUpdatePeriodMs)
+                .append(" tsb=").append(manifest.timeShiftBufferDepthMs).append(" spd=")
+                .append(manifest.suggestedPresentationDelayMs).append(" pub=").append(manifest.publishTimeMs)
+                .append(" loc=").append(manifest.location).append(" utc=").append(manifest.utcTiming)
+                .append(" svc=").append(manifest.serviceDescription).append(" prog=")
+                .append(manifest.programInformation).append(" periods=").append(manifest.getPeriodCount())
+                .append('\n');
+        for (int p = 0; p < manifest.getPeriodCount(); p++) {
+            Period period = manifest.getPeriod(p);
+            sb.append(" period id=").append(period.id).append(" start=").append(period.startMs)
+                    .append(" events=").append(period.eventStreams.size()).append(" asset=")
+                    .append(period.assetIdentifier).append(" durUs=").append(manifest.getPeriodDurationUs(p))
+                    .append('\n');
+            for (AdaptationSet set : period.adaptationSets) {
+                sb.append("  set id=").append(set.id).append(" type=").append(set.type)
+                        .append(" acc=").append(set.accessibilityDescriptors)
+                        .append(" ess=").append(set.essentialProperties)
+                        .append(" sup=").append(set.supplementalProperties).append('\n');
+                for (Representation r : set.representations) {
+                    sb.append("   rep ").append(r.getClass().getSimpleName()).append(" rev=")
+                            .append(r.revisionId).append(" pto=").append(r.presentationTimeOffsetUs)
+                            .append(" format=").append(r.format).append(" fmtHash=").append(r.format.hashCode())
+                            .append(" label=").append(r.format.label).append(" labels=").append(r.format.labels)
+                            .append(" role=").append(r.format.roleFlags).append(" sel=")
+                            .append(r.format.selectionFlags).append(" container=")
+                            .append(r.format.containerMimeType).append(" fps=").append(r.format.frameRate)
+                            .append(" avg=").append(r.format.averageBitrate).append(" peak=")
+                            .append(r.format.peakBitrate).append(" ch=").append(r.format.channelCount)
+                            .append(" acc=").append(r.format.accessibilityChannel)
+                            .append(" drm=").append(r.format.drmInitData)
+                            .append(" meta=").append(r.format.metadata)
+                            .append(" cryptoType=").append(r.format.cryptoType)
+                            .append(" inband=").append(r.inbandEventStreams)
+                            .append(" ess=").append(r.essentialProperties)
+                            .append(" sup=").append(r.supplementalProperties)
+                            .append(" cacheKey=").append(r.getCacheKey())
+                            .append(" formatFields=").append(fields(r.format));
+                    for (androidx.media3.exoplayer.dash.manifest.BaseUrl base : r.baseUrls) {
+                        sb.append(" base=").append(base.url).append('|').append(base.serviceLocation)
+                                .append('|').append(base.priority).append('|').append(base.weight);
+                    }
+                    androidx.media3.exoplayer.dash.manifest.RangedUri init = r.getInitializationUri();
+                    androidx.media3.exoplayer.dash.manifest.RangedUri index = r.getIndexUri();
+                    sb.append(" init=").append(init != null ? init.resolveUriString("") + "@" + init.start + "+" + init.length : null);
+                    sb.append(" index=").append(index != null ? index.resolveUriString("") + "@" + index.start + "+" + index.length : null);
+                    androidx.media3.exoplayer.dash.DashSegmentIndex segIndex = r.getIndex();
+                    sb.append(" segIndex=").append(segIndex != null ? segIndex.getClass().getSimpleName()
+                            + ":" + segIndex.isExplicit() : null);
+                    sb.append('\n');
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    /** Every instance field of a media3 value object, reflectively (arrays expanded). */
+    private static String fields(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        StringBuilder sb = new StringBuilder("{");
+        for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            for (java.lang.reflect.Field field : type.getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+                try {
+                    field.setAccessible(true);
+                    Object v = field.get(value);
+                    String text = v instanceof Object[] ? java.util.Arrays.deepToString((Object[]) v)
+                            : v instanceof byte[] ? java.util.Arrays.toString((byte[]) v)
+                            : String.valueOf(v);
+                    sb.append(field.getName()).append('=').append(text).append(';');
+                } catch (ReflectiveOperationException | RuntimeException e) {
+                    sb.append(field.getName()).append("=?;");
+                }
+            }
+        }
+        return sb.append('}').toString();
     }
 }

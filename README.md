@@ -10,14 +10,20 @@ To open YouTube links in Salut, use You > Settings > General > Open YouTube link
 
 ## Build
 
-The public source includes the modified SharedModules and MediaServiceCore dependencies. No private submodule access is needed. Install JDK 21, PowerShell 7, and Android SDK Platform 37.0 with Build Tools 37.0.0. Set JAVA_HOME and ANDROID_HOME. On Windows, Linux or macOS, run these commands in PowerShell:
+The public source includes the vendored SharedModules and MediaServiceCore dependencies. Install PowerShell 7 and Docker with a Linux AMD64 engine. Local tests and builds use the same immutable container image as GitHub Actions, including Java, Android SDK and PowerShell. The image is public and contains no signing key or account credentials.
 
 ```powershell
 ./personal/tools/Test.ps1
 ./personal/tools/Build.ps1
 ```
 
-The scripts select the platform's Java and Gradle executables. On Linux or macOS, a direct Gradle build is also available with `bash gradlew :smarttubetv:assembleStmobileDebug`. The wrapper downloads its pinned, hash-checked Gradle bootstrap. Development builds use a local development key and cannot replace official builds. The official signing key is not included in the public source.
+The default test command runs the complete offline corpus, including every required regression suite. Tests execute freshly by default, matching CI. Use `-Fast` for the smaller required-only set; `-ForceExecution:$false` explicitly permits Gradle up-to-date reuse. `-FullSuite` explicitly includes live Google/YouTube integration checks, which need network access and, where applicable, test accounts; add `-OfflineOnly` to exclude that category. Live-only checks can also be selected on the youtubeapi Gradle test task with `-PsalutLiveServicesOnly=true`.
+
+Source stays in your checkout; Linux build output and caches use a Docker volume scoped to that checkout. Each local run exports its logs and testcase evidence under `build/maintenance/container-runs/`. Successful APK builds export to `smarttubetv/build/outputs/renamed_apks/`. Phone test JVMs reuse workers on Linux; `-IsolatePhoneWorkers` is available for validation.
+
+For an explicit native fallback, use `-Native` with JDK 21, Android Platform 37.0 and Build Tools 37.0.0 configured through JAVA_HOME and ANDROID_HOME. Supplying `-ToolchainRoot` also selects the native toolchain. Windows/macOS native phone tests retain per-class JVM isolation. Native output and Linux volume caches are separate.
+
+Official releases require the retained signing key through SALUT_SIGNING_KEY and `-PsalutRelease`. A local release container receives that file through a read-only mount; the key is never copied into the image. Development builds use a development key and cannot replace official builds.
 
 GitHub Actions uses Ubuntu 24.04 to test each push and pull request. A version tag matching personal/release.json runs the tests, builds signed release APKs, verifies their package, version and certificate, and publishes the APKs, SHA256SUMS and salut.json update feed in GitHub Releases. The maintainer supplies SALUT_SIGNING_KEY_BASE64 through GitHub Secrets. GitHub release notes contain only the tagged version section from CHANGELOG.md; Unreleased and earlier versions are excluded. See CHANGELOG.md for release history and personal/features.json for the behavior inventory.
 

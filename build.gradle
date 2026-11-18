@@ -28,11 +28,19 @@ buildscript {
     }
 }
 
+def reusePhoneWorkersOnLinux = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('linux')
+
 allprojects {
     tasks.withType(Test).configureEach {
+        if (project.name == 'youtubeapi' && rootProject.hasProperty('salutOfflineTests')) {
+            useJUnit { excludeCategories 'com.liskovsoft.youtubeapi.LiveService' }
+        }
+        if (project.name == 'youtubeapi' && rootProject.hasProperty('salutLiveServicesOnly')) {
+            useJUnit { includeCategories 'com.liskovsoft.youtubeapi.LiveService' }
+        }
         if (project.name == 'smarttubetv') {
             // Windows native graphics must not reuse loaded Robolectric runtimes across suites.
-            forkEvery = 1
+            forkEvery = reusePhoneWorkersOnLinux ? 0 : 1
             maxParallelForks = 2
             maxHeapSize = '1024m'
         }

@@ -14,6 +14,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Ignore
 
 @Ignore("Won't work with TV auth headers")
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService::class)
 @RunWith(RobolectricTestRunner::class)
 class NotificationsApiTest {
     /**

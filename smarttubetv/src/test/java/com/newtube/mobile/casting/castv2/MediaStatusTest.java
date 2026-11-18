@@ -17,7 +17,7 @@ import static org.junit.Assert.assertNull;
  * Robolectric supplies the real org.json (the unit-test android.jar stubs it).
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 34) // newest SDK that runs on Java 17
+@Config(sdk = 34, manifest = Config.NONE, application = android.app.Application.class) // newest SDK that runs on Java 17
 // The app depends on conscrypt-android (Cronet path), whose JNI-only classes shadow Robolectric's
 // JVM conscrypt and crash environment setup with UnsatisfiedLinkError - these tests do no crypto.
 @ConscryptMode(ConscryptMode.Mode.OFF)

@@ -23,6 +23,7 @@ import java.io.IOException;
 import retrofit2.Call;
 import retrofit2.Response;
 
+@org.junit.experimental.categories.Category(com.liskovsoft.youtubeapi.LiveService.class)
 @RunWith(RobolectricTestRunner.class)
 public class OAuth2ApiTest {
     private OAuth2Api mService;

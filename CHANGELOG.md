@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-- **Anonymous feedback backend:** Added a validated SQLite HTTP outbox and separate Telegram delivery worker with transport retries and a persistent shared delivery cooldown; Android feedback UI and deployment are not included.
-
 - **Playlists open directly below the player:** Show the loaded playlist directly below the player, with the current video marked. The heading includes its position, playlist size, owner and privacy icon. Removed the collapsed playlist card and unrelated loading placeholders.
 - **The current video starts below the playlist heading:** Opening a playlist positions the selected row at the top of the list. Near the end, scrolling stops at the last row without adding empty space.
 - **Pull down to reveal video details:** Playlist pages initially show the list. Pulling down past the first row reveals video information, actions and comments. Scrolling up hides that information before moving the list.
