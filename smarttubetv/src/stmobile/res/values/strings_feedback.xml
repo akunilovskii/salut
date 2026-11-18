@@ -1,0 +1,28 @@
+<resources>
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_note">Type or use keyboard dictation.\nLeave out personal details.</string>
+    <string name="feedback_versions">Included: Salut %1$s · Android %2$s</string>
+    <string name="feedback_type">Type (required)</string>
+    <string name="feedback_screen">Screen (optional)</string>
+    <string name="feedback_description">Description (required)</string>
+    <string name="feedback_steps">Steps (optional)</string>
+    <string name="feedback_expected">Expected result (optional)</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_invalid">Check required fields and length limits (32 KB total). Your draft is saved.</string>
+    <string name="feedback_rate">Too many requests. Try again later. Your draft is saved.</string>
+    <string name="feedback_failed">Could not confirm delivery. Check your connection and try again. Your draft is saved.</string>
+    <string name="feedback_success">Feedback accepted. Thank you.</string>
+    <string-array name="feedback_types"><item>Error</item><item>Improvement</item></string-array>
+    <string-array name="feedback_screens">
+        <item>Not specified</item>
+        <item>Home</item>
+        <item>Subscriptions</item>
+        <item>Watch later</item>
+        <item>Playlist</item>
+        <item>Channel</item>
+        <item>Search</item>
+        <item>Player</item>
+        <item>Settings</item>
+        <item>Other</item>
+    </string-array>
+</resources>

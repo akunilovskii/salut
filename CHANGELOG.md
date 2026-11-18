@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Feedback:** Send errors and improvements from a circular speech-bubble toolbar icon. Type uses one radio group, while Screen is an optional dropdown with no automatic selection. All fields have persistent labels and consistent spacing, Description is twice as tall, instructions are shorter, and the Function field is removed. Drafts survive closing the form, backgrounding and failed delivery within the current app session. Ending the app session or successful delivery clears them. Unchanged retries keep their original message and ID. Closing cancels a pending request, and delivery clears the draft only after a matching receipt.
+
 - **Playlists open directly below the player:** Show the loaded playlist directly below the player, with the current video marked. The heading includes its position, playlist size, owner and privacy icon. Removed the collapsed playlist card and unrelated loading placeholders.
 - **The current video starts below the playlist heading:** Opening a playlist positions the selected row at the top of the list. Near the end, scrolling stops at the last row without adding empty space.
 - **Pull down to reveal video details:** Playlist pages initially show the list. Pulling down past the first row reveals video information, actions and comments. Scrolling up hides that information before moving the list.

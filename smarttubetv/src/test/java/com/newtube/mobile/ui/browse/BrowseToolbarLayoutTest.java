@@ -40,7 +40,7 @@ public class BrowseToolbarLayoutTest {
         Activity activity = Robolectric.buildActivity(Activity.class).setup().get();
         activity.setTheme(R.style.Theme_NewTube);
         activity.setContentView(R.layout.activity_mobile_browse);
-        for (int id : new int[] {R.id.mobile_switch_audio, R.id.mobile_cast_button,
+        for (int id : new int[] {R.id.mobile_switch_audio, R.id.mobile_feedback_button, R.id.mobile_cast_button,
                 R.id.mobile_search_button, R.id.mobile_title_back}) {
             View button = activity.findViewById(id);
             LayerDrawable background = (LayerDrawable) button.getBackground();
@@ -65,7 +65,7 @@ public class BrowseToolbarLayoutTest {
         root.layout(0, 0, width, 800);
         TextView title = activity.findViewById(R.id.mobile_title_bar);
         int edge = title.getRight();
-        for (int id : new int[] {R.id.mobile_switch_audio, R.id.mobile_cast_button,
+        for (int id : new int[] {R.id.mobile_switch_audio, R.id.mobile_feedback_button, R.id.mobile_cast_button,
                 R.id.mobile_search_button, R.id.mobile_you_button_container}) {
             View button = activity.findViewById(id);
             assertTrue("Overlapping toolbar button " + id, button.getLeft() >= edge);

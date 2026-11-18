@@ -71,6 +71,17 @@
         android:contentDescription="@string/switch_audio_output"
         android:paddingHorizontal="8dp" android:paddingVertical="12dp"
         android:src="@drawable/ic_switch_audio"
+        app:layout_constraintEnd_toStartOf="@id/mobile_feedback_button"
+        app:layout_constraintTop_toTopOf="@id/mobile_title_bar" />
+
+    <ImageButton
+        android:id="@+id/mobile_feedback_button"
+        android:layout_width="@dimen/mobile_icon_action_width"
+        android:layout_height="@dimen/mobile_browse_top_bar_height"
+        android:background="@drawable/bg_toolbar_touch"
+        android:contentDescription="@string/feedback_title"
+        android:paddingHorizontal="8dp" android:paddingVertical="12dp"
+        android:src="@drawable/ic_mobile_feedback"
         app:layout_constraintEnd_toStartOf="@id/mobile_cast_button"
         app:layout_constraintTop_toTopOf="@id/mobile_title_bar" />
 
