@@ -58,6 +58,13 @@ public class FeedbackFormTest {
             assertNotNull(type);
             assertEquals(RadioGroup.HORIZONTAL, type.getOrientation());
             assertEquals(-1, type.getCheckedRadioButtonId());
+            for (int id : new int[]{R.id.feedback_type_error, R.id.feedback_type_improvement}) {
+                RadioButton option = type.findViewById(id);
+                assertNull("Type options must not have a ripple/highlight background", option.getBackground());
+                option.setPressed(true);
+                assertNull(option.getBackground());
+                option.setPressed(false);
+            }
             assertEquals(4, fields.size());
             assertEquals(activity.getString(R.string.feedback_screen), fields.get(0).getHint().toString());
             int rowGap = ((android.widget.LinearLayout.LayoutParams) fields.get(0).getLayoutParams()).topMargin;

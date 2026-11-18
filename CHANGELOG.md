@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Feedback form:** Error/Improvement selection switches instantly without animation; Description cursor and multiline text start at the top.
+- **Feedback form:** Error/Improvement selection switches instantly without animation or background highlight; only the radio indicator changes; Description cursor and multiline text start at the top.
 
 - **Feedback:** Send errors and improvements from a circular speech-bubble toolbar icon. Type uses one radio group, while Screen is an optional dropdown with no automatic selection. All fields have persistent labels and consistent spacing, Description is twice as tall, instructions are shorter, and the Function field is removed. Drafts survive closing the form, backgrounding and failed delivery within the current app session. Ending the app session or successful delivery clears them. Unchanged retries keep their original message and ID. Closing cancels a pending request, and delivery clears the draft only after a matching receipt.
 

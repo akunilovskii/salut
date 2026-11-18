@@ -24,6 +24,7 @@
             android:layout_weight="1"
             android:maxLines="2"
             android:minHeight="48dp"
+            android:background="@null"
             app:buttonCompat="@drawable/mobile_feedback_radio" />
 
         <com.google.android.material.radiobutton.MaterialRadioButton
@@ -33,6 +34,7 @@
             android:layout_weight="1"
             android:maxLines="2"
             android:minHeight="48dp"
+            android:background="@null"
             app:buttonCompat="@drawable/mobile_feedback_radio" />
     </RadioGroup>
 </LinearLayout>
