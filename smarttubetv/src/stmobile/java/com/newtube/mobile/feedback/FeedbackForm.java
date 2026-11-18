@@ -70,6 +70,7 @@ public final class FeedbackForm {
         MaterialAutoCompleteTextView screen = dropdown(content, R.string.feedback_screen,
                 R.array.feedback_screens, categories, draft.screen);
         EditText description = field(content, R.string.feedback_description, draft.description, true, 6000);
+        description.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
         // Double the normal three-line field including its themed inner padding.
         int descriptionHeight = description.getLineHeight() * description.getMinLines()
                 + description.getCompoundPaddingTop() + description.getCompoundPaddingBottom();

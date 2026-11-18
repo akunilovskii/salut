@@ -15,24 +15,10 @@
   ~ limitations under the License.
   -->
 
-<!-- Adapted for Feedback: namespaced states and 100 ms AppCompat transitions. -->
-<animated-selector
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        tools:ignore="NewApi">
+<!-- Static states keep selection immediate in both directions. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-            android:id="@+id/feedback_radio_checked"
-            android:state_checked="true"
-            android:drawable="@drawable/btn_radio_on_mtrl" />
-    <item
-            android:id="@+id/feedback_radio_unchecked"
-            android:drawable="@drawable/btn_radio_off_mtrl" />
-    <transition
-            android:fromId="@+id/feedback_radio_checked"
-            android:toId="@+id/feedback_radio_unchecked"
-            android:drawable="@drawable/mobile_feedback_radio_on_to_off" />
-    <transition
-            android:fromId="@+id/feedback_radio_unchecked"
-            android:toId="@+id/feedback_radio_checked"
-            android:drawable="@drawable/mobile_feedback_radio_off_to_on" />
-</animated-selector>
+        android:state_checked="true"
+        android:drawable="@drawable/btn_radio_on_mtrl" />
+    <item android:drawable="@drawable/btn_radio_off_mtrl" />
+</selector>
