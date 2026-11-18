@@ -178,7 +178,7 @@ foreach ($Group in $Groups) {
             @{ className = $_.GetAttribute('classname'); name = $_.GetAttribute('name'); outcome = $Outcome }
         })
         if ($Cases.Count -ne [int]$Result.testsuite.tests) { throw "Incomplete testcase inventory: $Suite" }
-        $SuiteMeasurements += @{ name = $Suite; cases = $Cases }
+        $SuiteMeasurements += @{ name = $Suite; required = ($Group.Suites -contains $Suite); cases = $Cases }
     }
     $RequiredChecks += $Total
     $Measurements += @{ name = $Group.Name; elapsedSeconds = $GroupTimer.Elapsed.TotalSeconds; suites = $SuiteMeasurements }
