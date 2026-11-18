@@ -79,10 +79,12 @@ public class FeedbackFormTest {
                 assertTrue(input.isCounterEnabled());
                 assertEquals(limits[i], input.getCounterMaxLength());
             }
+            assertEquals(android.view.Gravity.TOP,
+                    fields.get(1).getEditText().getGravity() & android.view.Gravity.VERTICAL_GRAVITY_MASK);
             // Counters display limits without truncating the user's draft or changing validation.
             fields.get(1).getEditText().setText(new String(new char[6001]).replace('\0', 'x'));
             assertEquals(6001, fields.get(1).getEditText().length());
-            fields.get(1).getEditText().setText("Report");
+            fields.get(1).getEditText().setText("Report\nSecond line");
             assertFalse(((Button) dialog.findViewById(R.id.feedback_send)).isEnabled());
             type.check(R.id.feedback_type_error);
             assertTrue(((Button) dialog.findViewById(R.id.feedback_send)).isEnabled());
@@ -92,6 +94,17 @@ public class FeedbackFormTest {
             assertFalse(((RadioButton) type.findViewById(R.id.feedback_type_error)).isChecked());
             assertTrue(((RadioButton) type.findViewById(R.id.feedback_type_improvement)).isChecked());
             assertEquals(View.GONE, fields.get(2).getVisibility());
+            FeedbackDraft switched = new FeedbackDraft(FeedbackDraft.Session.forTask(activity.getTaskId()));
+            org.json.JSONObject improvement = new org.json.JSONObject(switched.prepare("1", "17"));
+            assertEquals("enhancement", improvement.getString("kind"));
+            assertEquals("Report\nSecond line", improvement.getString("description"));
+            type.check(R.id.feedback_type_error);
+            assertTrue(((RadioButton) type.findViewById(R.id.feedback_type_error)).isChecked());
+            assertFalse(((RadioButton) type.findViewById(R.id.feedback_type_improvement)).isChecked());
+            assertEquals("Report\nSecond line", fields.get(1).getEditText().getText().toString());
+            switched = new FeedbackDraft(FeedbackDraft.Session.forTask(activity.getTaskId()));
+            assertEquals("bug", new org.json.JSONObject(switched.prepare("1", "17")).getString("kind"));
+            type.check(R.id.feedback_type_improvement);
             fields.get(1).getEditText().setText("");
             screen.setText(screen.getAdapter().getItem(5).toString(), false);
             screen.getOnItemClickListener().onItemClick(null, null, 5, 5);
