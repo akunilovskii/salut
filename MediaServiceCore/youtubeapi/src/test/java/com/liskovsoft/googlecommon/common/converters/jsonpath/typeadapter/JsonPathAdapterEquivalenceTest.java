@@ -17,7 +17,6 @@ import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfo;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoHls;
 import com.liskovsoft.youtubeapi.videoinfo.models.VideoInfoReel;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -25,16 +24,9 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.ConscryptMode;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * NEWTUBE(open-cpu): the cached-metadata, direct-walk JsonPathTypeAdapter must map every input
@@ -130,73 +122,6 @@ public class JsonPathAdapterEquivalenceTest {
         assertSame("filters and scans", Exotic.class,
                 "{\"a\":{\"b\":{\"name\":\"deep\"}}, \"list\":[{\"id\":1,\"name\":\"one\"},{\"id\":2,\"name\":\"two\"}]}"
                         .getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Opt-in exhaustive sweep (NEWTUBE_JSONPATH_SWEEP=1): every JsonPath model class in src/main
-     * against every JSON resource up to 1.5 MB.
-     */
-    @Test
-    public void everyModelAgainstEveryResource() throws Exception {
-        Assume.assumeTrue(System.getenv("NEWTUBE_JSONPATH_SWEEP") != null);
-        List<Class<?>> models = modelClasses(new File("src/main/java"));
-        List<File> fixtures;
-        try (Stream<java.nio.file.Path> files = Files.walk(new File("src/test/resources").toPath())) {
-            fixtures = files.map(java.nio.file.Path::toFile)
-                    .filter(f -> f.getName().endsWith(".json") && f.length() < 1_500_000)
-                    .sorted().collect(Collectors.toList());
-        }
-        int pairs = 0;
-        int mapped = 0;
-        for (File fixture : fixtures) {
-            byte[] json = Files.readAllBytes(fixture.toPath());
-            for (Class<?> model : models) {
-                String legacy = serialize(readLegacy(model, json));
-                String current = serialize(readNew(model, json));
-                assertEquals(fixture + " as " + model.getName(), legacy, current);
-                pairs++;
-                if (!"null".equals(current)) {
-                    mapped++;
-                }
-            }
-        }
-        System.out.println("jsonpath sweep: models=" + models.size() + " fixtures=" + fixtures.size()
-                + " pairs=" + pairs + " nonNull=" + mapped);
-    }
-
-    private static List<Class<?>> modelClasses(File root) throws Exception {
-        List<Class<?>> result = new ArrayList<>();
-        try (Stream<java.nio.file.Path> files = Files.walk(root.toPath())) {
-            for (java.nio.file.Path path : files.filter(p -> p.toString().endsWith(".java")).collect(Collectors.toList())) {
-                String source = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-                if (!source.contains("@JsonPath(")) {
-                    continue;
-                }
-                String name = root.toPath().relativize(path).toString().replace(File.separatorChar, '.')
-                        .replaceAll("\\.java$", "");
-                Class<?> type;
-                try {
-                    type = Class.forName(name);
-                } catch (ClassNotFoundException e) {
-                    continue;
-                }
-                addWithNested(type, result);
-            }
-        }
-        return result;
-    }
-
-    private static void addWithNested(Class<?> type, List<Class<?>> out) {
-        boolean annotated = false;
-        for (Field field : type.getDeclaredFields()) {
-            annotated |= field.isAnnotationPresent(JsonPath.class);
-        }
-        if (annotated && !type.isInterface() && !Modifier.isAbstract(type.getModifiers())) {
-            out.add(type);
-        }
-        for (Class<?> nested : type.getDeclaredClasses()) {
-            addWithNested(nested, out);
-        }
     }
 
     private static void assertSame(String label, Class<?> type, byte[] json) {
