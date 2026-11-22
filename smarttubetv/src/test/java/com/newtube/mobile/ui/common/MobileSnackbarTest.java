@@ -227,7 +227,7 @@ public class MobileSnackbarTest {
     }
 
     @Test
-    public void quickNoticeStaysAboveNavigationWhenThePlayerFloatsHigherUp() {
+    public void quickNoticeIgnoresAppNavigationAndMiniPlayer() {
         ViewGroup content = host.findViewById(android.R.id.content);
         View player = new View(host);
         player.setId(R.id.mobile_mini_player);
@@ -237,7 +237,7 @@ public class MobileSnackbarTest {
         content.addView(navigation, new ViewGroup.LayoutParams(400, 56));
         sCallbacks.onActivityResumed(host);
         Snackbar notice = MobileSnackbar.showTransient(host, "Added to Watch later", "Undo", () -> { });
-        assertEquals(navigation, notice.getAnchorView());
+        assertNull(notice.getAnchorView());
         notice.dismiss();
     }
 
@@ -259,7 +259,7 @@ public class MobileSnackbarTest {
             java.lang.reflect.Field field = MobileSnackbar.class.getDeclaredField("sLast");
             field.setAccessible(true);
             Snackbar notice = (Snackbar) ((java.lang.ref.WeakReference<?>) field.get(null)).get();
-            assertEquals(navigation, notice.getAnchorView());
+            assertNull(notice.getAnchorView());
             notice.dismiss();
         } catch (ReflectiveOperationException error) {
             throw new AssertionError(error);
@@ -288,8 +288,34 @@ public class MobileSnackbarTest {
         ViewGroup.MarginLayoutParams margins = (ViewGroup.MarginLayoutParams) notice.getView().getLayoutParams();
         float density = host.getResources().getDisplayMetrics().density;
         assertEquals(Math.round(12 * density), margins.bottomMargin);
-        assertEquals(Math.round(16 * density), margins.leftMargin);
-        assertEquals(Math.round(16 * density), margins.rightMargin);
+        int available = content.getWidth() - content.getPaddingLeft() - content.getPaddingRight();
+        assertEquals(Math.round(available * 0.8f), margins.width);
+        assertEquals((available - margins.width) / 2, margins.leftMargin);
+        assertEquals((available - margins.width + 1) / 2, margins.rightMargin);
+        notice.dismiss();
+    }
+
+    @Test
+    public void widthTracksHostResizeAndLongTextRetainsItsAction() {
+        ViewGroup content = host.findViewById(android.R.id.content);
+        content.layout(0, 0, 1000, 800);
+        sCallbacks.onActivityResumed(host);
+        AtomicInteger actions = new AtomicInteger();
+        Snackbar notice = MobileSnackbar.showTransient(host,
+                "A long notification that must wrap rather than hiding its action or truncating text",
+                "Sign in", actions::incrementAndGet);
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) notice.getView().getLayoutParams();
+        assertEquals(800, params.width);
+        assertEquals(100, params.leftMargin);
+        content.layout(0, 0, 600, 800);
+        params = (ViewGroup.MarginLayoutParams) notice.getView().getLayoutParams();
+        assertEquals(480, params.width);
+        assertEquals(60, params.leftMargin);
+        TextView text = notice.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+        assertEquals(Integer.MAX_VALUE, text.getMaxLines());
+        assertNull(text.getEllipsize());
+        assertTrue(notice.getView().findViewById(com.google.android.material.R.id.snackbar_action).performClick());
+        assertEquals(1, actions.get());
         notice.dismiss();
     }
 
