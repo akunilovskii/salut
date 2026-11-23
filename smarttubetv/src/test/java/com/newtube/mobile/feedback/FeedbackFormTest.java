@@ -2,7 +2,17 @@ package com.newtube.mobile.feedback;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Intent;
 import android.os.Looper;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.media.ExifInterface;
+import android.net.Uri;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import org.json.JSONObject;
+import org.robolectric.annotation.GraphicsMode;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -45,9 +55,7 @@ public class FeedbackFormTest {
         try {
             form.show(activity);
             Shadows.shadowOf(Looper.getMainLooper()).idle();
-            Field dialogField = FeedbackForm.class.getDeclaredField("dialog");
-            dialogField.setAccessible(true);
-            BottomSheetDialog dialog = (BottomSheetDialog) dialogField.get(form);
+            BottomSheetDialog dialog = sheet(form);
             List<MaterialAutoCompleteTextView> selectors = new ArrayList<>();
             List<TextInputLayout> fields = new ArrayList<>();
             collect(dialog.getWindow().getDecorView(), selectors, fields);
@@ -187,9 +195,7 @@ public class FeedbackFormTest {
             try {
                 reopened.show(fixture.activity);
                 Shadows.shadowOf(Looper.getMainLooper()).idle();
-                Field field = FeedbackForm.class.getDeclaredField("dialog");
-                field.setAccessible(true);
-                BottomSheetDialog sheet = (BottomSheetDialog) field.get(reopened);
+                BottomSheetDialog sheet = sheet(reopened);
                 List<MaterialAutoCompleteTextView> selectors = new ArrayList<>();
                 List<TextInputLayout> fields = new ArrayList<>();
                 collect(sheet.getWindow().getDecorView(), selectors, fields);
@@ -201,6 +207,106 @@ public class FeedbackFormTest {
                 assertEquals(0, fixture.transport.created);
             } finally { reopened.close(); }
         }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void pickerResultRestoresUprightJpegAndRetriesItsExactBytes() throws Exception {
+        try (FormFixture fixture = new FormFixture()) {
+            int code = fixture.launchPicker(fixture.dialog);
+            fixture.form.close();
+            fixture.finishWork();
+            FeedbackForm reopened = new FeedbackForm(fixture.transport, fixture.scheduler);
+            try {
+                reopened.onActivityResult(fixture.activity, code, Activity.RESULT_OK, fixture.jpegSelection());
+                fixture.finishWork();
+                FeedbackImage image = fixture.restored().images().get(0);
+                Bitmap delivered = BitmapFactory.decodeByteArray(image.data, 0, image.data.length);
+                for (Bitmap upright : new Bitmap[]{image.preview, delivered}) {
+                    assertEquals(16, upright.getWidth());
+                    assertEquals(32, upright.getHeight());
+                    int top = upright.getPixel(8, 4);
+                    int bottom = upright.getPixel(8, 27);
+                    assertTrue(Color.red(top) > Color.blue(top));
+                    assertTrue(Color.blue(bottom) > Color.red(bottom));
+                }
+                assertEquals(ExifInterface.ORIENTATION_UNDEFINED,
+                        new ExifInterface(new ByteArrayInputStream(image.data)).getAttributeInt(
+                                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED));
+                BottomSheetDialog sheet = sheet(reopened);
+                code = fixture.launchPicker(sheet);
+                reopened.onActivityResult(fixture.activity, code, Activity.RESULT_CANCELED, null);
+                assertEquals(1, fixture.restored().images().size());
+                Button send = sheet.findViewById(R.id.feedback_send);
+                fixture.transport.fail = true;
+                send.performClick();
+                byte[] original = fixture.transport.latest.wire().readByteArray();
+                fixture.finishWork();
+                fixture.assertDraftPreserved();
+                fixture.transport.fail = false;
+                fixture.transport.receipt = new JSONObject().put("status", "accepted")
+                        .put("reportId", "different ID").toString();
+                send.performClick();
+                assertArrayEquals(original, fixture.transport.latest.wire().readByteArray());
+                fixture.finishWork();
+                fixture.assertDraftPreserved();
+                send.performClick();
+                okio.Buffer wire = fixture.transport.latest.wire();
+                JSONObject message = new JSONObject(wire.readUtf8(wire.readInt()));
+                assertArrayEquals(image.data, wire.readByteArray(wire.readInt()));
+                assertTrue(wire.exhausted());
+                fixture.transport.receipt = new JSONObject().put("status", "accepted")
+                        .put("reportId", message.getString("reportId")).toString();
+                fixture.finishWork();
+                assertEquals("", fixture.restored().description);
+                assertTrue(fixture.restored().images().isEmpty());
+            } finally {
+                reopened.close();
+            }
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void removingThumbnailAndDismissingDuringPreparationPreserveText() throws Exception {
+        try (FormFixture fixture = new FormFixture()) {
+            int code = fixture.launchPicker(fixture.dialog);
+            fixture.form.onActivityResult(fixture.activity, code, Activity.RESULT_OK, fixture.jpegSelection());
+            fixture.finishWork();
+            View remove = findLabel(fixture.dialog.getWindow().getDecorView(),
+                    fixture.activity.getString(R.string.feedback_remove_image_number, 1));
+            assertNotNull(remove);
+            remove.performClick();
+            assertTrue(fixture.restored().images().isEmpty());
+            code = fixture.launchPicker(fixture.dialog);
+            fixture.form.onActivityResult(fixture.activity, code, Activity.RESULT_OK, fixture.jpegSelection());
+            assertFalse(fixture.send.isEnabled());
+            fixture.form.close();
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
+            fixture.finishWork();
+            assertTrue(fixture.restored().images().isEmpty());
+            fixture.assertDraftPreserved();
+        }
+    }
+
+    private static BottomSheetDialog sheet(FeedbackForm form) throws Exception {
+        Field field = FeedbackForm.class.getDeclaredField("dialog");
+        field.setAccessible(true);
+        return (BottomSheetDialog) field.get(form);
+    }
+
+    private static View findLabel(View view, String label) {
+        CharSequence description = view.getContentDescription();
+        if ((description != null && label.contentEquals(description))
+                || (view instanceof Button && label.contentEquals(((Button) view).getText()))) return view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = findLabel(group.getChildAt(i), label);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private static final class FormFixture implements AutoCloseable {
@@ -221,11 +327,46 @@ public class FeedbackFormTest {
             draft.kind = "bug"; draft.description = "Keep this report"; draft.steps = "Reproduce"; draft.save();
             form.show(activity);
             Shadows.shadowOf(Looper.getMainLooper()).idle();
-            Field field = FeedbackForm.class.getDeclaredField("dialog");
-            field.setAccessible(true);
-            dialog = (BottomSheetDialog) field.get(form);
+            dialog = sheet(form);
             send = ((Button) dialog.findViewById(R.id.feedback_send));
             assertTrue(send.isEnabled());
+        }
+        int launchPicker(BottomSheetDialog sheet) {
+            View add = findLabel(sheet.getWindow().getDecorView(), activity.getString(R.string.feedback_add_images));
+            assertNotNull(add);
+            add.performClick();
+            org.robolectric.shadows.ShadowActivity.IntentForResult launch =
+                    Shadows.shadowOf(activity).getNextStartedActivityForResult();
+            assertEquals(Intent.ACTION_OPEN_DOCUMENT, launch.intent.getAction());
+            assertTrue(launch.intent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false));
+            return launch.requestCode;
+        }
+        Intent jpegSelection() {
+            Bitmap source = Bitmap.createBitmap(32, 16, Bitmap.Config.ARGB_8888);
+            source.eraseColor(Color.RED);
+            for (int x = 16; x < 32; x++) {
+                for (int y = 0; y < 16; y++) source.setPixel(x, y, Color.BLUE);
+            }
+            ByteArrayOutputStream clean = new ByteArrayOutputStream();
+            assertTrue(source.compress(Bitmap.CompressFormat.JPEG, 95, clean));
+            source.recycle();
+            byte[] jpeg = clean.toByteArray();
+            // EXIF APP1 segment with TIFF orientation 5 (transpose).
+            byte[] exif = {(byte) 255, (byte) 225, 0, 34, 'E', 'x', 'i', 'f', 0, 0,
+                    'M', 'M', 0, 42, 0, 0, 0, 8, 0, 1, 1, 18, 0, 3, 0, 0, 0, 1,
+                    0, 5, 0, 0, 0, 0, 0, 0};
+            ByteArrayOutputStream tagged = new ByteArrayOutputStream();
+            tagged.write(jpeg, 0, 2);
+            tagged.write(exif, 0, exif.length);
+            tagged.write(jpeg, 2, jpeg.length - 2);
+            Uri uri = Uri.parse("content://feedback-test/selection");
+            Shadows.shadowOf(activity.getContentResolver()).registerInputStream(uri,
+                    new ByteArrayInputStream(tagged.toByteArray()));
+            return new Intent().setData(uri);
+        }
+        void finishWork() {
+            scheduler.triggerActions();
+            Shadows.shadowOf(Looper.getMainLooper()).idle();
         }
         FeedbackDraft restored() {
             return new FeedbackDraft(FeedbackDraft.Session.forTask(activity.getTaskId()));
@@ -241,6 +382,7 @@ public class FeedbackFormTest {
     private static final class FakeTransport implements Call.Factory {
         int created, executions;
         boolean fail;
+        String receipt;
         Runnable onExecute;
         FakeCall latest;
         public Call newCall(Request request) {
@@ -270,18 +412,19 @@ public class FeedbackFormTest {
                             }
                         });
             }
-            String payload() throws IOException {
+            String payload() throws IOException { return wire().readUtf8(); }
+            okio.Buffer wire() throws IOException {
                 okio.Buffer buffer = new okio.Buffer();
                 request.body().writeTo(buffer);
-                return buffer.readUtf8();
+                return buffer;
             }
             public Response execute() throws IOException {
                 executions++; executed = true;
                 if (onExecute != null) onExecute.run();
                 if (fail) throw new IOException("Offline");
                 return new Response.Builder().request(request).protocol(Protocol.HTTP_1_1)
-                        .code(503).message("Unavailable")
-                        .body(ResponseBody.create(MediaType.parse("application/json"), "{}")).build();
+                        .code(receipt == null ? 503 : 202).message("Test response")
+                        .body(ResponseBody.create(MediaType.parse("application/json"), receipt == null ? "{}" : receipt)).build();
             }
 
         }

@@ -2,20 +2,27 @@ package com.newtube.mobile.feedback;
 
 import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /** Private message draft and immutable retry envelope. No account or device identifiers. */
 public final class FeedbackDraft {
+    static final int MAX_TEXT_BYTES = 32768;
+
     public String kind = "", screen = "", description = "", steps = "", expected = "";
     private String reportId = "", attemptedPayload = "";
     private final Session session;
     private String savedFields;
+    private final List<FeedbackImage> images;
 
     /** Process memory only; a different Android task starts with an empty draft. */
     static final class Session {
         private static int activeTaskId = Integer.MIN_VALUE;
         private static Session active;
+        boolean pickingImages;
         private String contents = "{}";
+        private final List<FeedbackImage> images = new ArrayList<>();
 
         static synchronized Session forTask(int taskId) {
             if (active == null || activeTaskId != taskId) {
@@ -25,11 +32,12 @@ public final class FeedbackDraft {
             return active;
         }
 
-        void clear() { contents = "{}"; }
+        void clear() { contents = "{}"; images.clear(); }
     }
 
     FeedbackDraft(Session session) {
         this.session = session;
+        this.images = session.images;
         try {
             JSONObject j = new JSONObject(session.contents);
             kind = j.optString("kind"); screen = j.optString("screen");
@@ -38,6 +46,24 @@ public final class FeedbackDraft {
             reportId = j.optString("reportId"); attemptedPayload = j.optString("attemptedPayload");
         } catch (Exception ignored) { }
         try { savedFields = fields(true).toString(); } catch (Exception ignored) { }
+    }
+
+    List<FeedbackImage> images() { return new ArrayList<>(images); }
+
+    void addImages(List<FeedbackImage> chosen) {
+        if (chosen.isEmpty()) return;
+        images.addAll(chosen);
+        invalidateRetry();
+    }
+
+    void removeImage(FeedbackImage image) {
+        if (images.remove(image)) invalidateRetry();
+    }
+
+    private void invalidateRetry() {
+        reportId = "";
+        attemptedPayload = "";
+        save();
     }
 
     public void save() {
@@ -77,7 +103,7 @@ public final class FeedbackDraft {
         reportId = UUID.randomUUID().toString();
         JSONObject body = new JSONObject(content).put("reportId", reportId);
         String raw = body.toString();
-        if (raw.getBytes(StandardCharsets.UTF_8).length > 32768) throw new IllegalArgumentException("bytes");
+        if (raw.getBytes(StandardCharsets.UTF_8).length > MAX_TEXT_BYTES) throw new IllegalArgumentException("bytes");
         attemptedPayload = raw;
         save();
         return raw;

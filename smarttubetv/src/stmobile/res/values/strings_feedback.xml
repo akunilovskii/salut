@@ -25,4 +25,12 @@
         <item>Settings</item>
         <item>Other</item>
     </string-array>
+    <string name="feedback_add_images">Add images</string>
+    <string name="feedback_remove_image">Remove</string>
+    <string name="feedback_image_preview">Image %1$d</string>
+    <string name="feedback_remove_image_number">Remove image %1$d</string>
+    <string name="feedback_image_count">You can attach up to three images.</string>
+    <string name="feedback_image_size">Each image must fit within 5 MB and 16 megapixels.</string>
+    <string name="feedback_image_invalid">Choose a readable, static PNG or JPEG image.</string>
+    <string name="feedback_image_upload">The images could not be sent. Your draft is saved. Try again.</string>
 </resources>
