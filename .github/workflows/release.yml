@@ -49,8 +49,10 @@ jobs:
             build/gradle-user-home/caches/modules-2
             build/gradle-user-home/wrapper
             build/robolectric-maven
-          key: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle.properties', '**/gradle.lockfile', '**/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties') }}
+          key: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', '**/gradle.properties', '**/gradle.lockfile', '**/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', 'personal/robolectric-runtimes.json') }}
           restore-keys: ${{ env.SALUT_CACHE_NAMESPACE }}-${{ runner.os }}-${{ runner.arch }}-java21-
+      - name: Verify and prepare Robolectric runtimes
+        run: python -B tools/ci_robolectric.py
       - name: Check application
         id: application
         shell: pwsh
