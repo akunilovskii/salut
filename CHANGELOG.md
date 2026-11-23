@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Phone notices:** Bottom notices are centered at 80% of the available window width, 12 dp above system navigation or the safe bottom edge, independent of app navigation and the mini-player. Long text wraps while actions remain accessible.
+- **Phone notices:** Bottom notices are centered at 80% of the available window width, 12 dp above system navigation or the safe bottom edge, independent of app navigation and the mini-player. Long text wraps while actions remain accessible. Resizing keeps the width and bottom gap without adding artificial safe-area offsets.
 
 - **Feedback form:** Error/Improvement selection switches instantly without animation or background highlight; only the radio indicator changes; Description cursor and multiline text start at the top.
 

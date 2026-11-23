@@ -167,7 +167,9 @@
       ],
       "tests": ["MobileSnackbarTest", "ChannelPinTest", "ChannelTitleFadeTest", "VisibleNextQueueTest"],
       "checks": [
-        "Shared messages and quick notices share the bottom anchor with a visible mini-player",
+        "Shared messages and quick notices share the safe bottom baseline with a visible mini-player",
+        "Resizing retains 80% width, symmetric margins and the action without inventing system insets when host bounds exceed decor bounds",
+        "Rendered resize coverage checks measured width, centering, bottom gap, full multiline text, unclipped action bounds and touch activation using native Robolectric graphics",
         "Background messages retain a native Toast without recursion",
         "Pin and Unpin resolve the same channel from different card tokens",
         "Title opacity tracks the final header scroll interval, remains fixed while scrolling stops and reverses at the same positions", "Compact icon highlights meet without overlapping hit regions", "The channel capsule bottom aligns with counts; More aligns with the name and Pin is only a menu action",

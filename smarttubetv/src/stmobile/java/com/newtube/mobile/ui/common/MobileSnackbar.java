@@ -325,8 +325,10 @@ public final class MobileSnackbar {
                         | WindowInsetsCompat.Type.displayCutout());
         int[] location = new int[2];
         host.getLocationInWindow(location);
-        int left = Math.max(0, safe.left - location[0] - host.getPaddingLeft());
-        int right = Math.max(0, safe.right - (window.getWidth() - location[0]
+        // A host can temporarily extend past the decor during a resize. Negative space
+        // outside the window is not a system inset: never invent an inset from it.
+        int left = Math.max(0, safe.left - Math.max(0, location[0] + host.getPaddingLeft()));
+        int right = Math.max(0, safe.right - Math.max(0, window.getWidth() - location[0]
                 - host.getWidth() + host.getPaddingRight()));
         int available = Math.max(0, host.getWidth() - host.getPaddingLeft()
                 - host.getPaddingRight() - left - right);
@@ -341,7 +343,7 @@ public final class MobileSnackbar {
         margins.rightMargin = right + (available - width + 1) / 2;
         // Only add the part of the safe inset not already reserved by the host.
         margins.bottomMargin = Math.round(12 * host.getResources().getDisplayMetrics().density)
-                + Math.max(0, safe.bottom - (window.getHeight() - location[1]
+                + Math.max(0, safe.bottom - Math.max(0, window.getHeight() - location[1]
                         - host.getHeight() + host.getPaddingBottom()));
         if (oldWidth != margins.width || oldLeft != margins.leftMargin
                 || oldRight != margins.rightMargin || oldBottom != margins.bottomMargin) {
