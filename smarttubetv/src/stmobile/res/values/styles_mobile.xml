@@ -96,6 +96,7 @@
         <!-- NEWTUBE(snackbar): the action on the Snackbar (light on the dark theme, dark on the
              light one) in the app's ink, not red - "Sign in" / "Undo" / "View" are choices,
              not alarms. -->
+        <item name="snackbarStyle">@style/Widget.NewTube.Snackbar</item>
         <item name="snackbarButtonStyle">@style/Widget.NewTube.Snackbar.Action</item>
     </style>
 
@@ -113,6 +114,10 @@
         <item name="iconPadding">0dp</item>
         <item name="iconSize">24dp</item>
         <item name="iconTint">@color/mobile_color_on_surface</item>
+    </style>
+
+    <style name="Widget.NewTube.Snackbar" parent="Widget.MaterialComponents.Snackbar">
+        <item name="android:maxWidth">-1dp</item>
     </style>
 
     <style name="Widget.NewTube.Snackbar.Action" parent="Widget.MaterialComponents.Button.TextButton.Snackbar">

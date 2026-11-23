@@ -227,7 +227,7 @@ public class MobileSnackbarTest {
     }
 
     @Test
-    public void quickNoticeStaysAboveNavigationWhenThePlayerFloatsHigherUp() {
+    public void quickNoticeIgnoresAppNavigationAndMiniPlayer() {
         ViewGroup content = host.findViewById(android.R.id.content);
         View player = new View(host);
         player.setId(R.id.mobile_mini_player);
@@ -237,7 +237,7 @@ public class MobileSnackbarTest {
         content.addView(navigation, new ViewGroup.LayoutParams(400, 56));
         sCallbacks.onActivityResumed(host);
         Snackbar notice = MobileSnackbar.showTransient(host, "Added to Watch later", "Undo", () -> { });
-        assertEquals(navigation, notice.getAnchorView());
+        assertNull(notice.getAnchorView());
         notice.dismiss();
     }
 
@@ -259,7 +259,7 @@ public class MobileSnackbarTest {
             java.lang.reflect.Field field = MobileSnackbar.class.getDeclaredField("sLast");
             field.setAccessible(true);
             Snackbar notice = (Snackbar) ((java.lang.ref.WeakReference<?>) field.get(null)).get();
-            assertEquals(navigation, notice.getAnchorView());
+            assertNull(notice.getAnchorView());
             notice.dismiss();
         } catch (ReflectiveOperationException error) {
             throw new AssertionError(error);
@@ -288,9 +288,123 @@ public class MobileSnackbarTest {
         ViewGroup.MarginLayoutParams margins = (ViewGroup.MarginLayoutParams) notice.getView().getLayoutParams();
         float density = host.getResources().getDisplayMetrics().density;
         assertEquals(Math.round(12 * density), margins.bottomMargin);
-        assertEquals(Math.round(16 * density), margins.leftMargin);
-        assertEquals(Math.round(16 * density), margins.rightMargin);
+        int available = content.getWidth() - content.getPaddingLeft() - content.getPaddingRight();
+        assertEquals(Math.round(available * 0.8f), margins.width);
+        assertEquals((available - margins.width) / 2, margins.leftMargin);
+        assertEquals((available - margins.width + 1) / 2, margins.rightMargin);
         notice.dismiss();
+    }
+
+    @Test
+    public void widthTracksHostResizeAndLongTextRetainsItsAction() {
+        ViewGroup content = host.findViewById(android.R.id.content);
+        // Deliberately exceed the decor bounds: a resize must not turn the negative
+        // remaining space into a phantom system inset and shrink the notice.
+        content.layout(0, 0, 1000, 800);
+        sCallbacks.onActivityResumed(host);
+        AtomicInteger actions = new AtomicInteger();
+        Snackbar notice = MobileSnackbar.showTransient(host,
+                "A long notification that must wrap rather than hiding its action or truncating text",
+                "Sign in", actions::incrementAndGet);
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) notice.getView().getLayoutParams();
+        assertEquals(800, params.width);
+        assertEquals(100, params.leftMargin);
+        assertEquals(100, params.rightMargin);
+        int gap = Math.round(12 * host.getResources().getDisplayMetrics().density);
+        assertEquals(gap, params.bottomMargin);
+        content.layout(0, 0, 600, 800);
+        params = (ViewGroup.MarginLayoutParams) notice.getView().getLayoutParams();
+        assertEquals(480, params.width);
+        assertEquals(60, params.leftMargin);
+        assertEquals(60, params.rightMargin);
+        assertEquals(gap, params.bottomMargin);
+        TextView text = notice.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+        assertEquals(Integer.MAX_VALUE, text.getMaxLines());
+        assertNull(text.getEllipsize());
+        assertTrue(notice.getView().findViewById(com.google.android.material.R.id.snackbar_action).performClick());
+        assertEquals(1, actions.get());
+        notice.dismiss();
+    }
+
+    @Test
+    @Config(qualifiers = "w600dp-h1000dp-mdpi")
+    @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+    public void renderedNoticeWrapsAndKeepsActionInsideBoundsAfterResize() {
+        ViewGroup content = host.findViewById(android.R.id.content);
+        sCallbacks.onActivityResumed(host);
+        AtomicInteger actions = new AtomicInteger();
+        String message = "A long notification must remain completely readable when the window "
+                + "becomes narrower. The sign in action must stay visible below this wrapped text, "
+                + "inside the notification, and respond to a touch after the window is resized.";
+        Snackbar notice = MobileSnackbar.showTransient(host, message, "Sign in", actions::incrementAndGet);
+        idle(400); // attach and finish the entrance animation, not the three-second lifetime
+        assertEquals(content, notice.getView().getParent());
+        assertRenderedNotice(content, notice, 500, 700);
+        assertRenderedNotice(content, notice, 300, 700);
+
+        View action = notice.getView().findViewById(com.google.android.material.R.id.snackbar_action);
+        android.graphics.Rect target = boundsIn(content, action);
+        long time = android.os.SystemClock.uptimeMillis();
+        android.view.MotionEvent down = android.view.MotionEvent.obtain(time, time,
+                android.view.MotionEvent.ACTION_DOWN, target.exactCenterX(), target.exactCenterY(), 0);
+        android.view.MotionEvent up = android.view.MotionEvent.obtain(time, time + 50,
+                android.view.MotionEvent.ACTION_UP, target.exactCenterX(), target.exactCenterY(), 0);
+        try {
+            assertTrue(content.dispatchTouchEvent(down));
+            assertTrue(content.dispatchTouchEvent(up));
+            shadowOf(Looper.getMainLooper()).idle();
+            assertEquals(1, actions.get());
+        } finally {
+            down.recycle();
+            up.recycle();
+            notice.dismiss();
+        }
+    }
+
+    private void assertRenderedNotice(ViewGroup content, Snackbar notice, int width, int height) {
+        // Resize the window so ViewRootImpl handles layout requests from the host's layout listener.
+        host.getWindow().setLayout(width, height);
+        idle(100);
+        assertEquals("resized content width", width, content.getWidth());
+        assertEquals("resized content height", height, content.getHeight());
+        View bar = notice.getView();
+        int available = width - content.getPaddingLeft() - content.getPaddingRight();
+        assertEquals(Math.round(available * 0.8f), bar.getMeasuredWidth());
+        assertEquals(bar.getMeasuredWidth(), bar.getWidth());
+        assertEquals(content.getPaddingLeft() + (available - bar.getWidth()) / 2, bar.getLeft());
+        assertEquals(height - content.getPaddingBottom() - 12, bar.getBottom());
+        assertTrue(bar.isShown());
+        assertEquals(1f, bar.getAlpha(), 0f);
+        assertEquals(0f, bar.getTranslationY(), 0f);
+
+        TextView text = bar.findViewById(com.google.android.material.R.id.snackbar_text);
+        View action = bar.findViewById(com.google.android.material.R.id.snackbar_action);
+        assertTrue("message wraps", text.getLineCount() > 1);
+        assertEquals("the final line includes the entire message", text.length(),
+                text.getLayout().getLineEnd(text.getLineCount() - 1));
+        assertEquals(0, text.getLayout().getEllipsisCount(text.getLineCount() - 1));
+        assertTrue("all text lines fit vertically", text.getHeight() >= text.getLayout().getHeight()
+                + text.getCompoundPaddingTop() + text.getCompoundPaddingBottom());
+        android.graphics.Rect barBounds = boundsIn(content, bar);
+        android.graphics.Rect textBounds = boundsIn(content, text);
+        android.graphics.Rect actionBounds = boundsIn(content, action);
+        assertTrue(barBounds.contains(textBounds));
+        assertTrue(barBounds.contains(actionBounds));
+        assertTrue("action stacks below wrapped text", actionBounds.top >= textBounds.bottom);
+        assertTrue(action.isShown());
+        assertTrue(action.isEnabled());
+        assertTrue(action.isClickable());
+        android.graphics.Rect visible = new android.graphics.Rect();
+        assertTrue(action.getGlobalVisibleRect(visible));
+        assertEquals("action is not horizontally clipped", action.getWidth(), visible.width());
+        assertEquals("action is not vertically clipped", action.getHeight(), visible.height());
+    }
+
+    private static android.graphics.Rect boundsIn(ViewGroup parent, View child) {
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        child.getDrawingRect(bounds);
+        parent.offsetDescendantRectToMyCoords(child, bounds);
+        return bounds;
     }
 
     private void idle(long ms) {

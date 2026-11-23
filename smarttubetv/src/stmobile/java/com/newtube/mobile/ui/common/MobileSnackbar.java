@@ -285,27 +285,70 @@ public final class MobileSnackbar {
         }
         sLast = new WeakReference<>(snackbar);
         sLastText = text;
-        // Every in-app message uses the same baseline, independent of the mini-player.
-        View nav = activity.findViewById(R.id.mobile_bottom_nav);
-        if (nav != null && nav.getVisibility() == View.VISIBLE) {
-            snackbar.setAnchorView(nav);
-        }
         View bar = snackbar.getView();
-        // MobileActivity already reserves system bars, or the navigation anchor includes them.
-        // Set original margins before show: copying Material's adjusted margins counts insets twice.
+        android.widget.TextView message = bar.findViewById(
+                com.google.android.material.R.id.snackbar_text);
+        message.setMaxLines(Integer.MAX_VALUE);
+        message.setEllipsize(null);
+        // Stack the action below multiline text rather than squeezing or clipping it.
+        snackbar.setMaxInlineActionWidth(1);
         snackbar.setGestureInsetBottomIgnored(true);
-        ViewCompat.setOnApplyWindowInsetsListener(bar, (view, insets) -> WindowInsetsCompat.CONSUMED);
-        ViewGroup.LayoutParams layout = bar.getLayoutParams();
-        if (layout instanceof ViewGroup.MarginLayoutParams) {
-            ViewGroup.MarginLayoutParams margins = (ViewGroup.MarginLayoutParams) layout;
-            int sideInset = Math.round(activity.getResources().getDisplayMetrics().density * 16);
-            margins.leftMargin = sideInset;
-            margins.rightMargin = sideInset;
-            margins.bottomMargin = Math.round(activity.getResources().getDisplayMetrics().density * 12);
-            bar.setLayoutParams(margins);
-        }
+        ViewGroup parent = (ViewGroup) bar.getParent();
+        // Before show the Snackbar is not attached; its layout params belong to the content host.
+        if (parent == null) parent = (ViewGroup) root;
+        final ViewGroup host = parent;
+        Runnable geometry = () -> updateGeometry(bar, host);
+        ViewCompat.setOnApplyWindowInsetsListener(bar, (view, insets) -> {
+            geometry.run();
+            return WindowInsetsCompat.CONSUMED;
+        });
+        View.OnLayoutChangeListener listener =
+                (v, l, t, r, b, ol, ot, or, ob) -> geometry.run();
+        host.addOnLayoutChangeListener(listener);
+        bar.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override public void onViewAttachedToWindow(View view) { geometry.run(); }
+            @Override public void onViewDetachedFromWindow(View view) {
+                host.removeOnLayoutChangeListener(listener);
+            }
+        });
+        geometry.run();
         snackbar.show();
         return snackbar;
+    }
+
+    private static void updateGeometry(View bar, ViewGroup host) {
+        if (!(bar.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)) return;
+        View window = host.getRootView();
+        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(host);
+        androidx.core.graphics.Insets safe = insets == null ? androidx.core.graphics.Insets.NONE
+                : insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                        | WindowInsetsCompat.Type.displayCutout());
+        int[] location = new int[2];
+        host.getLocationInWindow(location);
+        // A host can temporarily extend past the decor during a resize. Negative space
+        // outside the window is not a system inset: never invent an inset from it.
+        int left = Math.max(0, safe.left - Math.max(0, location[0] + host.getPaddingLeft()));
+        int right = Math.max(0, safe.right - Math.max(0, window.getWidth() - location[0]
+                - host.getWidth() + host.getPaddingRight()));
+        int available = Math.max(0, host.getWidth() - host.getPaddingLeft()
+                - host.getPaddingRight() - left - right);
+        int width = Math.round(available * 0.8f);
+        ViewGroup.MarginLayoutParams margins = (ViewGroup.MarginLayoutParams) bar.getLayoutParams();
+        int oldWidth = margins.width;
+        int oldLeft = margins.leftMargin;
+        int oldRight = margins.rightMargin;
+        int oldBottom = margins.bottomMargin;
+        margins.width = width;
+        margins.leftMargin = left + (available - width) / 2;
+        margins.rightMargin = right + (available - width + 1) / 2;
+        // Only add the part of the safe inset not already reserved by the host.
+        margins.bottomMargin = Math.round(12 * host.getResources().getDisplayMetrics().density)
+                + Math.max(0, safe.bottom - Math.max(0, window.getHeight() - location[1]
+                        - host.getHeight() + host.getPaddingBottom()));
+        if (oldWidth != margins.width || oldLeft != margins.leftMargin
+                || oldRight != margins.rightMargin || oldBottom != margins.bottomMargin) {
+            bar.setLayoutParams(margins);
+        }
     }
 
     private static final class Pending {
