@@ -9,17 +9,19 @@ YouTube, or SmartTube's developer.
 
 ## 1. Summary
 
-Salut has **no backend of its own** and its developer collects **no personal
-data**. The app talks only to YouTube/Google, a small set of community services
-you can disable, and (for update checks) GitHub. There are no analytics, no
-trackers, no advertising, and no crash reporting.
+Salut has no analytics, trackers, advertising, or automatic crash reporting.
+You can voluntarily send feedback to the project from the app.
 
-## 2. Data the developer collects
+## 2. Optional feedback
 
-**None.** Salut has no developer-controlled server, no account system of its
-own, and no telemetry or analytics frameworks (no Firebase, no Crashlytics, no
-Sentry, no ad SDKs). The developer does not receive, store, or have access to
-any information about you or your usage.
+When you send feedback, Salut transmits your message and any selected images
+over HTTPS to the feedback receiver. The report includes the app and Android
+versions and a random report ID used for retries. It includes no account or
+device identifier. Salut removes source image metadata before upload. Image
+contents can still reveal personal details.
+
+Drafts stay in app memory for the current session. The receiver stores accepted
+reports with their attachments for delivery to the project via Telegram.
 
 ## 3. YouTube / Google
 
@@ -72,10 +74,7 @@ purchases.
 
 ## 7. Your rights (GDPR / CCPA)
 
-Because Salut stores and transmits no personal data to the developer, the
-developer holds no identifiable records associated with you, and therefore has
-nothing to export or delete on request. Data held by Google/YouTube or the
-community services above is governed by their respective policies.
+Feedback reports are stored without account or device identifiers. If you\ninclude personal information in a report, see the contact section below. Data\nheld by Google/YouTube, Telegram, or community services is governed by their\nrespective policies.
 
 ## 8. Contact
 

@@ -2352,6 +2352,12 @@ public class MobileBrowseActivity extends MobileActivity
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        mFeedback.onActivityResult(this, requestCode, resultCode, data);
+    }
+
+    @Override
     protected void onDestroy() {
         mFeedback.close();
         unwatchMiniScreenOn(); // the shared player outlives this Activity

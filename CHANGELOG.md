@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Feedback images:** Attach up to three static PNG or JPEG images using Android's file picker. Preview or remove images beneath Description. JPEGs keep their intended orientation. Attachments stay with the session draft and are retried together with the message until the receiver confirms acceptance.
+
 - **Phone notices:** Bottom notices are centered at 80% of the available window width, 12 dp above system navigation or the safe bottom edge, independent of app navigation and the mini-player. Long text wraps while actions remain accessible. Resizing keeps the width and bottom gap without adding artificial safe-area offsets.
 
 - **Feedback form:** Error/Improvement selection switches instantly without animation or background highlight; only the radio indicator changes; Description cursor and multiline text start at the top.

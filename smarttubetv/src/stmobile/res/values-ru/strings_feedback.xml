@@ -25,4 +25,12 @@
         <item>Настройки</item>
         <item>Другое</item>
     </string-array>
+    <string name="feedback_add_images">Добавить изображения</string>
+    <string name="feedback_remove_image">Удалить</string>
+    <string name="feedback_image_preview">Изображение %1$d</string>
+    <string name="feedback_remove_image_number">Удалить изображение %1$d</string>
+    <string name="feedback_image_count">Можно прикрепить не больше трёх изображений.</string>
+    <string name="feedback_image_size">Размер каждого изображения — до 5 МБ и 16 мегапикселей.</string>
+    <string name="feedback_image_invalid">Выберите читаемое статичное изображение PNG или JPEG.</string>
+    <string name="feedback_image_upload">Не удалось отправить изображения. Черновик сохранён. Повторите отправку.</string>
 </resources>

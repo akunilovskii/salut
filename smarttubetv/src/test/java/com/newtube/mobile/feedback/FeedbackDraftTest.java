@@ -2,6 +2,7 @@ package com.newtube.mobile.feedback;
 
 import android.app.Application;
 import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,6 +92,20 @@ public class FeedbackDraftTest {
         assertEquals("A failure", new FeedbackDraft(session).description);
         draft.clear(); assertEquals("", new FeedbackDraft(session).description);
     }
+    @Test public void acceptsExactly32KiBOfSerializedUtf8() throws Exception {
+        valid();
+        draft.description = "界".repeat(6000);
+        draft.steps = "界".repeat(4000);
+        int remainder = FeedbackDraft.MAX_TEXT_BYTES
+                - draft.prepare("1", "16").getBytes(StandardCharsets.UTF_8).length
+                - (new JSONObject().put("expected", "").toString().length() - 1);
+        draft.expected = "a".repeat(remainder);
+        assertEquals(FeedbackDraft.MAX_TEXT_BYTES, draft.prepare("1", "16")
+                .getBytes(StandardCharsets.UTF_8).length);
+        draft.expected += "a";
+        assertThrows(IllegalArgumentException.class, () -> draft.prepare("1", "16"));
+    }
+
     @Test public void enforcesFieldAndUtf8BodyLimits() throws Exception {
         valid(); draft.description = new String(new char[6001]).replace('\0','x');
         try { draft.prepare("1", "16"); fail(); } catch (IllegalArgumentException expected) { }

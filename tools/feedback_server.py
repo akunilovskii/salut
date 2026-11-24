@@ -6,11 +6,13 @@ must overwrite the header and disable IP access logs. Mount /data writable by
 """
 import argparse
 import hashlib
+import io
 import ipaddress
 import json
 import secrets
 import socket
 import sqlite3
+import struct
 import threading
 import time
 import unicodedata
@@ -18,6 +20,70 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 MAX_BODY = 32768
+MAX_IMAGES = 3
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_IMAGE_PIXELS = 16_000_000
+IMAGE_REQUEST = 'application/vnd.salut.feedback'
+IMAGE_TIMEOUT = 60
+MAX_IMAGE_BODY = 4 + MAX_BODY + MAX_IMAGES * (4 + MAX_IMAGE_BYTES)
+
+
+class TextTooLarge(ValueError):
+    pass
+
+
+class InvalidImages(ValueError):
+    pass
+
+
+def unpack_images(body):
+    """Read a length-prefixed UTF-8 JSON envelope followed by 1–3 images."""
+    def read(limit):
+        header = stream.read(4)
+        if len(header) != 4:
+            raise ValueError('Missing length')
+        size, = struct.unpack('>I', header)
+        if not 0 < size <= limit:
+            raise ValueError('Invalid length')
+        data = stream.read(size)
+        if len(data) != size:
+            raise ValueError('Truncated data')
+        return data
+
+    stream = io.BytesIO(body)
+    text_length = int.from_bytes(body[:4], 'big')
+    if text_length > MAX_BODY:
+        raise TextTooLarge()
+    message = read(MAX_BODY)
+    images = []
+    try:
+        while stream.tell() < len(body) and len(images) < MAX_IMAGES:
+            images.append(check_image(read(MAX_IMAGE_BYTES)))
+        if not images or stream.tell() != len(body):
+            raise ValueError('Invalid image count')
+    except ValueError as error:
+        raise InvalidImages() from error
+    return message, images
+
+
+def check_image(data):
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(data), formats=('PNG', 'JPEG')) as image:
+            if (image.width * image.height > MAX_IMAGE_PIXELS
+                    or getattr(image, 'n_frames', 1) != 1
+                    or image.get_format_mimetype() == 'image/apng'):
+                raise ValueError('Invalid image dimensions or animation')
+            fmt = image.format.lower()
+            image.verify()
+        # verify() checks PNG chunks, but does not decode pixel data.
+        with Image.open(io.BytesIO(data), formats=('PNG', 'JPEG')) as image:
+            image.load()
+    except (OSError, SyntaxError, struct.error, Image.DecompressionBombError) as error:
+        raise ValueError('Invalid image') from error
+    return fmt, data
+
 LIMITS = dict(screen=80, function=200, description=6000, steps=4000,
               expected=4000, appVersion=64, androidVersion=32)
 REQUIRED = {'schemaVersion', 'reportId', 'kind', 'screen', 'description',
@@ -30,6 +96,10 @@ def connect(database):
         report_id TEXT PRIMARY KEY, kind TEXT NOT NULL, payload TEXT NOT NULL,
         next_part INTEGER NOT NULL DEFAULT 0, delivered INTEGER NOT NULL DEFAULT 0,
         retry_at REAL NOT NULL DEFAULT 0)''')
+    db.execute('''CREATE TABLE IF NOT EXISTS feedback_image (
+        report_id TEXT NOT NULL REFERENCES feedback(report_id),
+        position INTEGER NOT NULL, format TEXT NOT NULL, data BLOB NOT NULL,
+        PRIMARY KEY(report_id, position))''')
     db.commit()
     return db
 
@@ -60,14 +130,25 @@ def normalize(value):
     return result
 
 
-def accept(db, value):
+def images_for(db, report_id):
+    return db.execute('SELECT format,data FROM feedback_image WHERE report_id=? ORDER BY position',
+                      (report_id,)).fetchall()
+
+
+def accept(db, value, images=()):
     payload = json.dumps(value, ensure_ascii=False, sort_keys=True)
     with db:
-        db.execute('INSERT OR IGNORE INTO feedback(report_id,kind,payload) VALUES(?,?,?)',
-                   (value['reportId'], value['kind'], payload))
+        inserted = db.execute('INSERT OR IGNORE INTO feedback(report_id,kind,payload) VALUES(?,?,?)',
+                   (value['reportId'], value['kind'], payload)).rowcount
         old = db.execute('SELECT payload FROM feedback WHERE report_id=?',
                          (value['reportId'],)).fetchone()[0]
         if old != payload:
+            return 409
+        if inserted:
+            db.executemany('INSERT INTO feedback_image VALUES(?,?,?,?)', (
+                (value['reportId'], position, fmt, data)
+                for position, (fmt, data) in enumerate(images)))
+        elif images_for(db, value['reportId']) != list(images):
             return 409
     return 202
 
@@ -103,6 +184,7 @@ class Server(ThreadingHTTPServer):
                  per_ip=10, total=120, trusted_proxies=()):
         self.database = database
         self.slots = threading.BoundedSemaphore(concurrency)
+        self.image_slots = threading.BoundedSemaphore(min(2, concurrency))
         self.timeout_seconds = timeout
         self.rate = RateLimit(per_ip, total)
         self.trusted_proxies = {str(ipaddress.ip_address(p)) for p in trusted_proxies}
@@ -136,7 +218,10 @@ class Server(ThreadingHTTPServer):
 class Handler(BaseHTTPRequestHandler):
     def setup(self):
         super().setup()
-        self.deadline_timer = threading.Timer(self.server.timeout_seconds, self.expire)
+        self.start_deadline(self.server.timeout_seconds)
+
+    def start_deadline(self, seconds):
+        self.deadline_timer = threading.Timer(seconds, self.expire)
         self.deadline_timer.daemon = True
         self.deadline_timer.start()
 
@@ -170,6 +255,7 @@ class Handler(BaseHTTPRequestHandler):
                    {'status': 'ok'} if self.path == '/healthz' else {'error': 'Invalid path'})
 
     def do_POST(self):
+        image_slot = False
         try:
             if self.path != '/v1/feedback':
                 raise ValueError()
@@ -183,18 +269,28 @@ class Handler(BaseHTTPRequestHandler):
             if len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
                 raise ValueError()
             length = int(lengths[0])
-            if length > MAX_BODY:
+            content_type = self.headers.get_content_type()
+            if self.headers.get('Transfer-Encoding') or content_type not in ('application/json', IMAGE_REQUEST):
+                raise ValueError()
+            with_images = content_type == IMAGE_REQUEST
+            if length > (MAX_IMAGE_BODY if with_images else MAX_BODY):
                 self.reply(413, {'error': 'Body too large'})
                 return
-            if self.headers.get('Transfer-Encoding') or self.headers.get_content_type() != 'application/json':
-                raise ValueError()
+            timeout = self.server.timeout_seconds
+            if with_images:
+                image_slot = self.server.image_slots.acquire(False)
+                if not image_slot:
+                    self.reply(503, {'error': 'Image receiver busy'})
+                    return
+                timeout = max(timeout, IMAGE_TIMEOUT)
+                self.deadline_timer.cancel()
+                self.start_deadline(timeout)
             # One absolute deadline also bounds clients that trickle body bytes.
-            self.connection.settimeout(self.server.timeout_seconds)
-            deadline = time.monotonic() + self.server.timeout_seconds
+            deadline = time.monotonic() + timeout
             body = bytearray()
             while len(body) < length:
                 self.connection.settimeout(max(0.001, deadline - time.monotonic()))
-                chunk = self.rfile.read1(length - len(body))
+                chunk = self.rfile.read1(min(65536, length - len(body)))
                 if not chunk or time.monotonic() > deadline:
                     raise ValueError()
                 body.extend(chunk)
@@ -205,18 +301,26 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError()
                     obj[key] = item
                 return obj
-            value = normalize(json.loads(body.decode('utf-8'), object_pairs_hook=unique))
+            message, images = unpack_images(body) if with_images else (body, ())
+            value = normalize(json.loads(message.decode('utf-8'), object_pairs_hook=unique))
             db = connect(self.server.database)
             try:
-                code = accept(db, value)
+                code = accept(db, value, images)
             finally:
                 db.close()
             self.reply(code, {'reportId': value['reportId'], 'status': 'accepted'}
                        if code == 202 else {'error': 'Conflicting reportId'})
+        except TextTooLarge:
+            self.reply(413, {'error': 'Text body too large'})
+        except InvalidImages:
+            self.reply(400, {'error': 'Invalid images'})
         except (ValueError, TypeError, UnicodeError, RecursionError, socket.timeout):
             self.reply(400, {'error': 'Invalid request'})
         except sqlite3.Error:
             self.reply(503, {'error': 'Storage unavailable'})
+        finally:
+            if image_slot:
+                self.server.image_slots.release()
 
 
 def main():

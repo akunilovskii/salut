@@ -10,14 +10,15 @@ import http.client
 import json
 import sqlite3
 import time
+import uuid
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 try:
-    from .feedback_server import connect
+    from .feedback_server import connect, images_for
 except ImportError:
-    from feedback_server import connect
+    from feedback_server import connect, images_for
 
 
 def parts(value):
@@ -63,8 +64,25 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def send(token, chat_id, text):
     body = json.dumps({'chat_id': chat_id, 'text': text,
                        'link_preview_options': {'is_disabled': True}}).encode()
-    request = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage',
-                                     data=body, headers={'Content-Type': 'application/json'})
+    return telegram(token, 'sendMessage', body, 'application/json')
+
+
+def send_image(token, chat_id, caption, fmt, data):
+    boundary = uuid.uuid4().hex
+    blocks = []
+    for name, value in (('chat_id', chat_id), ('caption', caption)):
+        blocks.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'
+                      f'{value}\r\n'.encode())
+    extension = 'jpg' if fmt == 'jpeg' else 'png'
+    blocks.append(f'--{boundary}\r\nContent-Disposition: form-data; name="document"; '
+                  f'filename="image.{extension}"\r\nContent-Type: image/{fmt}\r\n\r\n'.encode())
+    body = b''.join([*blocks, data, f'\r\n--{boundary}--\r\n'.encode()])
+    return telegram(token, 'sendDocument', body, f'multipart/form-data; boundary={boundary}')
+
+
+def telegram(token, method, body, content_type):
+    request = urllib.request.Request(f'https://api.telegram.org/bot{token}/{method}',
+                                     data=body, headers={'Content-Type': content_type})
     opener = urllib.request.build_opener(NoRedirect())
     try:
         with opener.open(request, timeout=20) as response:
@@ -80,7 +98,7 @@ def send(token, chat_id, text):
         return False, 30
 
 
-def deliver_one(db, token, chat_id, sender=send, clock=None):
+def deliver_one(db, token, chat_id, sender=send, clock=None, image_sender=send_image):
     clock = time.time if clock is None else clock
     # Worker-owned singleton persists the shared bot/chat cooldown across restart.
     # Conservatively pause the entire queue on any delivery failure, not just 429.
@@ -97,12 +115,20 @@ def deliver_one(db, token, chat_id, sender=send, clock=None):
         return False
     report_id, payload, index = row
     messages = parts(json.loads(payload))
-    ok, delay = sender(token, chat_id, messages[index])
+    images = images_for(db, report_id)
+    total = len(messages) + len(images)
+    if index < len(messages):
+        ok, delay = sender(token, chat_id, messages[index])
+    else:
+        position = index - len(messages)
+        fmt, data = images[position]
+        caption = f'Report {report_id} — image {position + 1}/{len(images)}'
+        ok, delay = image_sender(token, chat_id, caption, fmt, data)
     completed_at = clock()
     with db:
         if ok:
             db.execute('UPDATE feedback SET next_part=?,delivered=?,retry_at=0 WHERE report_id=?',
-                       (index + 1, int(index + 1 == len(messages)), report_id))
+                       (index + 1, int(index + 1 == total), report_id))
         else:
             retry_at = completed_at + max(1, delay)
             db.execute('UPDATE feedback SET retry_at=? WHERE report_id=?',
