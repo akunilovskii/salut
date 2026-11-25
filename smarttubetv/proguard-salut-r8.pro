@@ -50,6 +50,21 @@
     public <init>();
 }
 
+# Gson uses field names and generic signatures to populate response objects.
+# Keep model graphs, including nested DTOs and unannotated Kotlin fields.
+-keep class com.liskovsoft.youtubeapi.**.gen.** { *; }
+-keep class com.liskovsoft.googlecommon.common.models.gen.** { *; }
+-keep class com.liskovsoft.youtubeapi.innertube.models.** { *; }
+-keep class com.liskovsoft.youtubeapi.dearrow.data.** { *; }
+-keep class com.liskovsoft.youtubeapi.app.potokennp2.visitor.data.** { *; }
+-keep class com.liskovsoft.youtubeapi.app.potokencloud.PoToken*Response* { *; }
+-keep class com.liskovsoft.youtubeapi.app.potokencloud2.PoTokenResponse { *; }
+-keep class com.liskovsoft.googleapi.*.data.** { *; }
+-keep class com.liskovsoft.googlecommon.common.constants.data.** { *; }
+-keep class com.liskovsoft.youtubeapi.app.nsigsolver.runtime.SolverOutput { *; }
+-keep class com.liskovsoft.youtubeapi.app.nsigsolver.runtime.ResponseData { *; }
+-keep class com.liskovsoft.youtubeapi.app.nsigsolver.runtime.SolverMemo$CheckOutput { *; }
+
 # dnsjava ships optional desktop resolvers and compile-time annotations.
 -dontwarn com.sun.jna.Library
 -dontwarn com.sun.jna.Memory
