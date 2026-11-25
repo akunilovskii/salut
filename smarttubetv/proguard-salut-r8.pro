@@ -1,9 +1,29 @@
+# Measure code and resource shrinking without R8's bytecode optimizations.
+-dontoptimize
+
 # The bundled J2V8 native library looks up Java classes, constructors and callbacks.
 -keep class com.eclipsesource.v8.** { *; }
 
 # The optional Google Play provider can be absent from the embedded Cronet build.
 -dontwarn com.google.android.gms.net.CronetProviderInstaller
--keep class org.chromium.net.impl.NativeCronetProvider { public <init>(android.content.Context); }
+# The media transport uses the embedded engine and its generated JNI bindings.
+-keep class org.chromium.net.impl.** { *; }
+-keep class internal.org.jni_zero.** { *; }
+-keep class org.jni_zero.** { *; }
+
+# WebView calls the playback token bridge through methods named in bundled JavaScript.
+-keepclassmembers class com.liskovsoft.youtubeapi.app.potokennp2.generators.** {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Response readers construct playback formats and their nested models reflectively.
+-keep class com.liskovsoft.youtubeapi.videoinfo.models.** { *; }
+
+# Media3 resolves optional source factories by class name. The HTTP fallback
+# constructs the Brotli decoder through its public InputStream constructor.
+-keep class androidx.media3.exoplayer.dash.DashMediaSource$Factory { public <init>(...); }
+-keep class androidx.media3.exoplayer.hls.HlsMediaSource$Factory { public <init>(...); }
+-keep class org.brotli.dec.BrotliInputStream { public <init>(java.io.InputStream); }
 
 # HapticSwipeRefreshLayout reads these fields by name.
 -keepclassmembers class androidx.swiperefreshlayout.widget.SwipeRefreshLayout {
@@ -72,6 +92,7 @@
 -dontwarn com.sun.jna.Pointer
 -dontwarn com.sun.jna.Structure
 -dontwarn com.sun.jna.Structure$FieldOrder
+-dontwarn com.sun.jna.Structure$ByReference
 -dontwarn com.sun.jna.WString
 -dontwarn com.sun.jna.platform.win32.Win32Exception
 -dontwarn com.sun.jna.ptr.IntByReference
