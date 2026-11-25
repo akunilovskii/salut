@@ -21,6 +21,22 @@ def sdk_command(name, *arguments):
     return subprocess.check_output(command, text=True, encoding="utf-8", errors="replace")
 
 
+def verify_apk(apk, identity):
+    version = identity["versionName"]
+    badging = sdk_command("aapt", "dump", "badging", apk)
+    package = re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", badging)
+    if not package or package.groups() != (identity["packageName"], str(identity["versionCode"]), version):
+        raise ValueError(f"Unexpected package or version: {apk.name}")
+    if "application-debuggable" in badging:
+        raise ValueError(f"Public release is debuggable: {apk.name}")
+    signatures = sdk_command("apksigner", "verify", "--print-certs", apk)
+    digests = re.findall(r"certificate SHA-256 digest: ([0-9a-fA-F]+)", signatures)
+    if not digests or set(value.lower() for value in digests) != {identity["certificateSha256"]}:
+        raise ValueError(f"Unexpected signing certificate: {apk.name}")
+    print(f"Verified package, version and certificate: {apk.name}")
+    return badging
+
+
 def verify(dist, tag):
     identity = json.loads((ROOT / "personal/release.json").read_text(encoding="utf-8"))
     version = identity["versionName"]
@@ -31,17 +47,7 @@ def verify(dist, tag):
     if set(dist.glob("*.apk")) != set(apks) or not all(apk.is_file() for apk in apks):
         raise ValueError("Release must contain exactly the four expected APKs")
     for apk in apks:
-        badging = sdk_command("aapt", "dump", "badging", apk)
-        package = re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", badging)
-        if not package or package.groups() != (identity["packageName"], str(identity["versionCode"]), version):
-            raise ValueError(f"Unexpected package or version: {apk.name}")
-        if "application-debuggable" in badging:
-            raise ValueError(f"Public release is debuggable: {apk.name}")
-        signatures = sdk_command("apksigner", "verify", "--print-certs", apk)
-        digests = re.findall(r"certificate SHA-256 digest: ([0-9a-fA-F]+)", signatures)
-        if not digests or set(value.lower() for value in digests) != {identity["certificateSha256"]}:
-            raise ValueError(f"Unexpected signing certificate: {apk.name}")
-        print(f"Verified package, version and certificate: {apk.name}")
+        verify_apk(apk, identity)
     subprocess.run([sys.executable, str(ROOT / "tools/update_manifest.py"),
                     "--tag", tag, "--dist", str(dist), "--out", str(dist / "salut.json")], check=True)
     checksums = [f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}"

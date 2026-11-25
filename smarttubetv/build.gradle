@@ -123,6 +123,12 @@ abstract class EmbeddedArtProfileTask extends DefaultTask {
     }
 }
 
+def r8Experiment = providers.gradleProperty('salutR8Experiment').orNull
+if (r8Experiment != null && !(r8Experiment in ['baseline', 'optimized'])) {
+    throw new GradleException('salutR8Experiment must be baseline or optimized')
+}
+def experimentShrinks = r8Experiment == 'optimized'
+
 def salutKey = System.getenv('SALUT_SIGNING_KEY')
 def salutKeyFile = rootProject.file(salutKey ?: 'personal/keys/debug.keystore')
 if (project.hasProperty('salutRelease')) {
@@ -202,8 +208,13 @@ android {
             reset()
             // Note, Android could soon start warning users when they run 32-bit apps
             //include 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a' //select ABIs to build APKs for
-            include 'armeabi-v7a', 'arm64-v8a', 'x86' // v7a main build, x86 for WSL, v8a for Pixel Tablet (no 32 bit support)
-            universalApk = true //generate an additional APK that contains all the ABIs
+            if (r8Experiment == null) {
+                include 'armeabi-v7a', 'arm64-v8a', 'x86'
+                universalApk = true
+            } else {
+                include 'arm64-v8a'
+                universalApk = false
+            }
         }
     }
 
@@ -230,9 +241,11 @@ android {
             // Public updates replace the existing personal install and retain its account data.
             applicationIdSuffix ".debug"
             signingConfig signingConfigs.debug
-            // Enable minification
-            // shrinkResources true
-            // minifyEnabled true
+            minifyEnabled experimentShrinks
+            shrinkResources experimentShrinks
+            if (experimentShrinks) {
+                proguardFile 'proguard-salut-r8.pro'
+            }
 
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
@@ -262,6 +275,7 @@ android {
             debuggable false
             // Retain the production no-minification contract while measuring release code.
             minifyEnabled false
+            shrinkResources false
             matchingFallbacks = ['release']
             buildConfigField "boolean", "BENCHMARK", "true"
             // Match the existing debug install identity; never require uninstalling user data.
@@ -348,11 +362,14 @@ android {
 androidComponents {
     onVariants(selector().all()) { variant ->
         def copyTask = tasks.register("copyRenamedApksFor${variant.name.capitalize()}", CopyRenamedApks) {
-            output.set(layout.buildDirectory.dir("outputs/renamed_apks/${variant.name}"))
+            def experiment = variant.name == 'stmobileRelease' ? r8Experiment : null
+            def outputPath = experiment == null ? variant.name : "salut-r8/${experiment}"
+            output.set(layout.buildDirectory.dir("outputs/renamed_apks/${outputPath}"))
             builtArtifactsLoader.set(variant.artifacts.getBuiltArtifactsLoader())
             // A -Pfdroid build is a different APK (updater off, Maven J2V8): its files must not
             // overwrite the regular release files when both are built in one checkout.
-            nameTag.set(project.hasProperty('fdroid') ? 'fdroid_' : '')
+            def fdroidTag = project.hasProperty('fdroid') ? 'fdroid_' : ''
+            nameTag.set(experiment == null ? fdroidTag : "${fdroidTag}r8_${experiment}_")
         }
         variant.artifacts.use(copyTask).wiredWith { it.input }.toListenTo(SingleArtifact.APK.INSTANCE)
     }
@@ -368,9 +385,12 @@ def registerEmbeddedArtProfile(variant) {
     def override = project.findProperty('profgenPath')
     def profgenPath = override != null ? providers.provider { override.toString() }
             : androidComponents.sdkComponents.sdkDirectory.map { it.file('cmdline-tools/latest/bin/profgen').asFile.absolutePath }
+    def dexTask = variant.name == 'stmobileRelease' &&
+            providers.gradleProperty('salutR8Experiment').orNull == 'optimized' ?
+            "minify${cap}WithR8" : "mergeDex${cap}"
     def task = tasks.register("generate${cap}EmbeddedArtProfile", EmbeddedArtProfileTask) {
-        dependsOn("mergeDex${cap}", "merge${cap}ArtProfile")
-        dexFiles.from(layout.buildDirectory.dir("intermediates/dex/${variant.name}/mergeDex${cap}").map {
+        dependsOn(dexTask, "merge${cap}ArtProfile")
+        dexFiles.from(layout.buildDirectory.dir("intermediates/dex/${variant.name}/${dexTask}").map {
             it.asFileTree.matching { include 'classes*.dex' }
         })
         humanReadableProfile.from(layout.buildDirectory.file(
