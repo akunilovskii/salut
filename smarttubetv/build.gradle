@@ -189,13 +189,14 @@ android {
         // its inclusion policy forbids self-updates that aren't an explicit opt-in.
         buildConfigField "boolean", "IN_APP_UPDATES", project.hasProperty('fdroid') ? "false" : "true"
 
-        // The content of Universal apk
-        ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a'
-            // -PemulatorAbi adds native x86_64 libs so an x86_64 AVD runs Cronet/J2V8 natively
-            // instead of through ARM translation (which inflates JS-solve and CPU timings ~10x).
-            if (project.hasProperty('emulatorAbi')) {
-                abiFilters 'x86_64'
+        // The experiment uses only the arm64 split. AGP rejects NDK filters with split-only APKs.
+        if (r8Experiment == null) {
+            ndk {
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+                // Add x86_64 so an AVD runs Cronet/J2V8 without ARM translation.
+                if (project.hasProperty('emulatorAbi')) {
+                    abiFilters 'x86_64'
+                }
             }
         }
     }
