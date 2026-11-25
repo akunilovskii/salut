@@ -21,18 +21,21 @@
     },
     {
       "id": "github-public-releases",
-      "behavior": "Public source and releases use akunilovskii/salut only. The clean public history is independent of retained signing material, which stays outside Git. Source export flattens reviewed dependency sources and omits keys, private instructions and local state. Release builds preserve the existing package and certificate, use increasing versions and enable the existing GitHub update flow with its existing global About preference and hourly automatic check. Downloads and installation require user action. Debug development builds retain disabled automatic checks. Version tags trigger tests, signed APK builds, identity verification and release publication. Older private builds need one manual update. GitHub release notes export only the tagged version section from CHANGELOG.md, preserving its complete Markdown. Unreleased and other versions are excluded; missing, empty or duplicate sections stop publication before signing-key restoration. GitHub Actions tests and release jobs run on Ubuntu 24.04; shared PowerShell 7 build and test helpers also support local Windows builds.",
+      "behavior": "Public source and releases use akunilovskii/salut only. The clean public history is independent of retained signing material, which stays outside Git. Source export flattens reviewed dependency sources and omits keys, private instructions and local state. Release builds preserve the existing package and certificate, use increasing versions and enable the existing GitHub update flow with its existing global About preference and hourly automatic check. Downloads and installation require user action. Debug development builds retain disabled automatic checks. At each completed 14-day UTC interval, release automation prepares a PR if Unreleased has user-facing notes. The merged release revision must pass tests before signing, verification and publication. An incomplete draft is resumed before the next version is prepared. Signed APKs, checksums and salut.json go live together. Older private builds need one manual update. GitHub release notes export only the tagged version section from CHANGELOG.md, preserving its complete Markdown. Unreleased and other versions are excluded; missing, empty or duplicate sections stop publication before signing-key restoration. GitHub Actions tests and release jobs run on Ubuntu 24.04; shared PowerShell 7 build and test helpers also support local Windows builds.",
       "files": [
         ".github/workflows/release.yml",
         "personal/release.json",
         "tools/export_public_source.py",
         "tools/verify_release.py",
+        "tools/release_train.py",
+        ".github/workflows/release-train.yml",
         "tools/update_manifest.py",
         "common/src/main/res/values/update_urls.xml",
         "smarttubetv/build.gradle"
       ],
       "tests": [
         "PublicReleaseTest",
+        "tools/tests/test_release_train.py",
         "AutoUpdateCheckTest"
       ],
       "checks": [
