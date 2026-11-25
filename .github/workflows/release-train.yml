@@ -1,0 +1,33 @@
+name: Prepare Salut release
+
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  pull-requests: read
+
+concurrency:
+  group: salut-release-preparation
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'akunilovskii/salut' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Continue or prepare biweekly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # A repository-scoped bot token with Contents and Pull requests write
+          # access ensures that opening the release PR triggers the required checks.
+          SALUT_RELEASE_PR_TOKEN: ${{ secrets.SALUT_RELEASE_PR_TOKEN }}
+        run: python3 -m tools.release_train prepare
