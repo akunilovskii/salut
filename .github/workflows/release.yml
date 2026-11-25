@@ -3,12 +3,11 @@ name: Test and release Salut
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
     inputs:
       validation:
-        description: Validation scope (worker benchmark requires a ci-bench/workers branch)
+        description: Validation scope (release retry runs on main)
         type: choice
         default: full-offline
         options:
@@ -16,6 +15,7 @@ on:
           - full-offline
           - worker-benchmark
           - build-image
+          - release-retry
 
 permissions:
   contents: read
@@ -39,17 +39,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 2
       - name: Check release tooling
-        shell: bash
-        run: |
-          # The pinned build container has Python 3.12 and unzip, but no pip.
-          deps="$(mktemp -d)"
-          trap 'rm -rf "$deps"' EXIT
-          curl --fail --location --retry 3 --max-time 60 \
-            'https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl' \
-            --output "$deps/pillow.whl"
-          echo "42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca  $deps/pillow.whl" | sha256sum --check
-          unzip -q "$deps/pillow.whl" -d "$deps/site"
-          PYTHONPATH="$deps/site" python -S -X utf8 -m unittest discover -s tools/tests
+        run: bash tools/test_release_tooling.sh
       - name: Restore dependency cache
         id: dependencies
         continue-on-error: true
@@ -137,24 +127,58 @@ jobs:
           retention-days: 7
           path: build/maintenance/ci-benchmark/
 
-  release:
-    if: github.repository == 'akunilovskii/salut' && startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+  release-plan:
+    if: >-
+      github.repository == 'akunilovskii/salut' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || inputs.validation == 'release-retry')
     needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.candidate.outputs.tag }}
+      revision: ${{ steps.candidate.outputs.revision }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Select merged release
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATION: ${{ inputs.validation }}
+        run: |
+          if [ "$VALIDATION" = release-retry ]; then
+            python -m tools.release_train select --retry
+          else
+            python -m tools.release_train select
+          fi
+
+  release:
+    if: needs.release-plan.outputs.tag != ''
+    needs: release-plan
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/akunilovskii/salut-build@sha256:b78be3c132cf30006095144240ec6cb58f01141ac6ba9107ca866ccbbcff1146
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          ref: ${{ needs.release-plan.outputs.revision }}
           persist-credentials: false
-      - name: Prepare version-specific release notes
+      - name: Check release tooling on the original revision
+        if: needs.release-plan.outputs.revision != github.sha
+        run: bash tools/test_release_tooling.sh
+      - name: Test the original release revision on recovery
+        if: needs.release-plan.outputs.revision != github.sha
         shell: pwsh
-        run: |
-          python -X utf8 -m tools.release_notes --tag "$env:GITHUB_REF_NAME" --out build/maintenance/release-notes.md
-          if ($LASTEXITCODE) { throw 'Release notes preparation failed' }
+        run: ./personal/tools/Test.ps1
+      - name: Prepare version-specific release notes
+        env:
+          RELEASE_TAG: ${{ needs.release-plan.outputs.tag }}
+        run: python -X utf8 -m tools.release_notes --tag "$RELEASE_TAG" --out build/maintenance/release-notes.md
       - name: Restore signing key
         shell: pwsh
         env:
@@ -166,19 +190,23 @@ jobs:
           "SALUT_SIGNING_KEY=$keyPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Build and verify release
         shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.release-plan.outputs.tag }}
         run: |
           ./personal/tools/Build.ps1 -Tasks ':smarttubetv:assembleStmobileRelease' -GradleArguments '-PsalutRelease'
-          python -X utf8 tools/verify_release.py --tag "$env:GITHUB_REF_NAME" --dist smarttubetv/build/outputs/renamed_apks/stmobileRelease
+          python -X utf8 tools/verify_release.py --tag "$env:RELEASE_TAG" --dist smarttubetv/build/outputs/renamed_apks/stmobileRelease
           if ($LASTEXITCODE) { throw 'Release verification failed' }
-      - name: Publish GitHub release
-        shell: pwsh
+      - name: Install release client in the build container
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends gh
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Publish verified release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          $dist = 'smarttubetv/build/outputs/renamed_apks/stmobileRelease'
-          $assets = @(Get-ChildItem -LiteralPath $dist -File | ForEach-Object FullName)
-          gh release create "$env:GITHUB_REF_NAME" @assets --repo "$env:GITHUB_REPOSITORY" --verify-tag --latest --title "Salut $($env:GITHUB_REF_NAME)" --notes-file 'build/maintenance/release-notes.md'
-          if ($LASTEXITCODE) { throw 'Release publication failed' }
+          RELEASE_TAG: ${{ needs.release-plan.outputs.tag }}
+          RELEASE_REVISION: ${{ needs.release-plan.outputs.revision }}
+        run: python -m tools.release_train publish --tag "$RELEASE_TAG" --revision "$RELEASE_REVISION"
 
   build-image:
     if: ${{ github.repository == 'akunilovskii/salut' && github.event_name == 'workflow_dispatch' && inputs.validation == 'build-image' }}
