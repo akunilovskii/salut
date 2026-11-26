@@ -85,20 +85,90 @@ def release_state(tag):
     return "missing"
 
 
-def prepare_release_files(identity, version, cutoff, today):
+def release_files(identity, version, cutoff, changelog, gradle):
+    rolled = roll_changelog(changelog, version, cutoff)
+    if rolled is None:
+        return {}
+    updated = dict(identity, versionName=version, versionCode=version_code(version), releasePeriod=str(cutoff))
+    return {
+        CHANGELOG: rolled,
+        GRADLE: bump_gradle(gradle, identity, version),
+        IDENTITY: json.dumps(updated, indent=2) + "\n",
+    }
+
+
+def prepare_release_files(identity, version, cutoff):
     boundary = output("git", "rev-list", "--first-parent",
                       f"--before={cutoff}T00:00:00Z", "-1", "HEAD")
-    if not boundary or not roll_changelog(output("git", "show", f"{boundary}:{CHANGELOG}"), version, today):
+    if not boundary or not roll_changelog(output("git", "show", f"{boundary}:{CHANGELOG}"), version, cutoff):
         return False
-    rolled = roll_changelog(CHANGELOG.read_text(encoding="utf-8"), version, today)
-    if rolled is None:
-        return False
-    updated_gradle = bump_gradle(GRADLE.read_text(encoding="utf-8"), identity, version)
-    identity.update(versionName=version, versionCode=version_code(version), releasePeriod=str(cutoff))
-    CHANGELOG.write_text(rolled, encoding="utf-8", newline="\n")
-    GRADLE.write_text(updated_gradle, encoding="utf-8", newline="\n")
-    IDENTITY.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8", newline="\n")
-    return True
+    files = release_files(identity, version, cutoff, CHANGELOG.read_text(encoding="utf-8"),
+                          GRADLE.read_text(encoding="utf-8"))
+    for path, content in files.items():
+        path.write_text(content, encoding="utf-8", newline="\n")
+    return bool(files)
+
+
+def read_revision(revision, path):
+    return subprocess.check_output(["git", "show", f"{revision}:{path.as_posix()}"]).decode("utf-8")
+
+
+def verify_release_branch(base, head, version, cutoff):
+    identity = json.loads(read_revision(base, IDENTITY))
+    if next_version(identity) != version:
+        raise ValueError("Release branch does not follow its base version")
+    files = release_files(identity, version, cutoff, read_revision(base, CHANGELOG), read_revision(base, GRADLE))
+    paths = output("git", "diff", "--no-renames", "--name-only", base, head).splitlines()
+    if (not files or set(paths) != {p.as_posix() for p in files} or output("git", "diff", "--summary", base, head)
+            or any(read_revision(head, path) != content for path, content in files.items())):
+        raise ValueError("Release branch differs from the generated release files")
+
+
+def authorize_release():
+    token = os.environ.pop("SALUT_RELEASE_PR_TOKEN", "")
+    if not token:
+        raise ValueError("Missing authorization for release pull requests")
+    os.environ["GH_TOKEN"] = token
+
+
+def continue_release(pr, identity, version, cutoff, branch):
+    if pr["isDraft"]:
+        return
+    app = os.environ["SALUT_RELEASE_APP_SLUG"]
+    if pr["author"]["login"] not in (f"{app}[bot]", f"app/{app}"):
+        raise ValueError("Only the release application's own pull requests can merge automatically")
+    ref = f"refs/heads/{branch}"
+    git_remote("fetch", "--no-tags", "origin", ref)
+    head = output("git", "rev-parse", "FETCH_HEAD")
+    if head != pr["headRefOid"]:
+        return
+    main = output("git", "rev-parse", "HEAD")
+    base = output("git", "merge-base", main, head)
+    # A delayed PR still belongs to its original period even when the next window opens.
+    candidate = date.fromisoformat(json.loads(read_revision(head, IDENTITY))["releasePeriod"])
+    if (period(candidate) != candidate or candidate > cutoff or
+            (identity.get("releasePeriod") and candidate <= date.fromisoformat(identity["releasePeriod"]))):
+        raise ValueError("Unexpected period for the pending release")
+    verify_release_branch(base, head, version, candidate)
+    if base != main:
+        if not prepare_release_files(identity, version, candidate):
+            return
+        # Preserve the previous release head when refreshing it against the latest main.
+        run("git", "add", "--", str(CHANGELOG), str(GRADLE), str(IDENTITY))
+        tree = output("git", "write-tree")
+        refreshed = output("git", "-c", "user.name=Salut Release", "-c",
+                           "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+                           "commit-tree", tree, "-p", head, "-p", main, "-m", f"Refreshed Salut v{version}")
+        authorize_release()
+        git_remote("push", "origin", f"{refreshed}:{ref}")
+        return
+    tests = [check.get("conclusion") for check in pr["statusCheckRollup"] if check.get("name") == "test"]
+    if pr["mergeStateStatus"] == "CLEAN" and tests == ["SUCCESS"]:
+        authorize_release()
+        merged = output("gh", "api", "--method", "PUT", "repos/{owner}/{repo}/pulls/" + str(pr["number"]) + "/merge",
+                        "-f", f"sha={head}", "-f", "merge_method=merge", "--jq", ".merged")
+        if merged != "true":
+            raise ValueError("GitHub did not confirm the release merge")
 
 
 def prepare(identity, today):
@@ -116,31 +186,31 @@ def prepare(identity, today):
 
     version = next_version(identity)
     branch = f"salut/release/v{version}"
-    existing = output("gh", "pr", "list", "--base", "main", "--head", branch,
-                      "--state", "open", "--json", "number", "--jq", ".[].number")
+    existing = json.loads(output("gh", "pr", "list", "--base", "main", "--head", branch, "--state", "open",
+                                 "--json", "number,author,isCrossRepository,isDraft,headRefOid,mergeStateStatus,statusCheckRollup",
+                                 "--jq", "[.[] | select(.isCrossRepository == false)]"))
     if existing:
-        print(f"Continuing release PR #{existing}")
+        if len(existing) != 1:
+            raise ValueError("Ambiguous release pull request")
+        continue_release(existing[0], identity, version, cutoff, branch)
         return
 
     ref = f"refs/heads/{branch}"
     has_branch = bool(git_remote("ls-remote", "--heads", "origin", ref))
     if not has_branch:
-        if not prepare_release_files(identity, version, cutoff, today):
+        if not prepare_release_files(identity, version, cutoff):
             return
         run("git", "add", "--", str(CHANGELOG), str(GRADLE), str(IDENTITY))
         run("git", "-c", "user.name=Salut Release", "-c",
             "user.email=41898282+github-actions[bot]@users.noreply.github.com",
             "commit", "-m", f"Prepare Salut v{version}")
-    token = os.environ.pop("SALUT_RELEASE_PR_TOKEN", "")
-    if not token:
-        raise ValueError("Configure SALUT_RELEASE_PR_TOKEN to open release PRs and trigger required checks")
-    os.environ["GH_TOKEN"] = token
+    authorize_release()
     if not has_branch:
         git_remote("push", "origin", f"HEAD:{ref}")
 
     run("gh", "pr", "create", "--base", "main", "--head", branch,
         "--title", f"Salut v{version}",
-        "--body", "Prepared from the user-facing Unreleased notes. Merge after the required checks pass.")
+        "--body", "Prepared from the user-facing Unreleased notes. The release train merges the verified revision after the required checks pass.")
 
 
 def select(identity, retry):

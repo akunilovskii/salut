@@ -44,7 +44,7 @@ class ReleaseTrainTest(unittest.TestCase):
             for key, content in (("CHANGELOG", changelog), ("GRADLE", gradle)):
                 files[key].write_text(content, encoding="utf-8")
             with (patch.multiple(train, **files), patch.object(train, "git_remote", return_value="") as git,
-                  patch.object(train, "output", side_effect=["", "boundary", changelog]),
+                  patch.object(train, "output", side_effect=["[]", "boundary", changelog]),
                   patch.object(train, "run") as run,
                   patch.dict(os.environ, {"SALUT_RELEASE_PR_TOKEN": "test-token"})):
                 train.prepare(identity, date(2026, 11, 26))
@@ -62,7 +62,7 @@ class ReleaseTrainTest(unittest.TestCase):
             self.assertEqual(run.call_args.args[:3], ("gh", "pr", "create"))
 
     def test_empty_period_and_open_pull_request_do_not_write(self):
-        for responses in (["25"], ["", "boundary", "## Unreleased\n\n<!-- empty -->"]):
+        for responses in (['[{"number":25,"isDraft":true}]'], ["[]", "boundary", "## Unreleased\n\n<!-- empty -->"]):
             with (patch.object(train, "output", side_effect=responses),
                   patch.object(train, "git_remote", return_value=""), patch.object(train, "run") as run):
                 train.prepare({"versionName": "1.18.0", "versionCode": 11800}, date(2026, 12, 9))
@@ -78,6 +78,75 @@ class ReleaseTrainTest(unittest.TestCase):
         with patch.object(train, "release_state", return_value="published"), patch.object(train, "output") as output:
             train.prepare(identity, date(2026, 12, 9))
             output.assert_not_called()
+
+    def test_automatic_merge_requires_exact_release_head_and_successful_test(self):
+        identity = {"versionName": "1.19.0", "versionCode": 11900}
+        cutoff = date(2026, 12, 10)
+        head, base = "c" * 40, "b" * 40
+        branch = "salut/release/v1.20.0"
+        for fetched, state, check, expected in (
+            (head, "CLEAN", "SUCCESS", True), (head, "BLOCKED", "SUCCESS", False),
+            (head, "CLEAN", "FAILURE", False), ("d" * 40, "CLEAN", "SUCCESS", False),
+        ):
+            pr = dict(number=41, author={"login":"release[bot]"}, isDraft=False, headRefOid=head, mergeStateStatus=state,
+                      statusCheckRollup=[dict(name="test", conclusion=check)])
+            with (patch.dict(os.environ, SALUT_RELEASE_APP_SLUG="release"),
+                  patch.object(train, "read_revision", return_value='{"releasePeriod":"2026-12-10"}'),
+                  patch.object(train, "output", side_effect=[fetched, base, base, "true"]) as command,
+                  patch.object(train, "git_remote"), patch.object(train, "verify_release_branch") as verify,
+                  patch.object(train, "authorize_release") as authorize, patch.object(train, "run") as run):
+                train.continue_release(pr, identity, "1.20.0", date(2026, 12, 24), branch)
+                if expected:
+                    verify.assert_called_once_with(base, head, "1.20.0", cutoff)
+                    command.assert_called_with("gh", "api", "--method", "PUT", "repos/{owner}/{repo}/pulls/41/merge",
+                                               "-f", f"sha={head}", "-f", "merge_method=merge", "--jq", ".merged")
+                else:
+                    authorize.assert_not_called()
+                    run.assert_not_called()
+
+    def test_release_branch_rejects_changes_outside_generated_files_and_modes(self):
+        cutoff = date(2026, 12, 10)
+        source = {train.IDENTITY: '{"versionName":"1.19.0","versionCode":11900}',
+                  train.GRADLE: 'versionCode 11900\nversionName "1.19.0"\n',
+                  train.CHANGELOG: "## Unreleased\n\n- New feature.\n"}
+        generated = train.release_files(json.loads(source[train.IDENTITY]), "1.20.0", cutoff,
+                                        source[train.CHANGELOG], source[train.GRADLE])
+        paths = "\n".join(path.as_posix() for path in generated)
+        for listing, summary, script, valid in (
+            (paths, "", "", True), (paths + "\nother.py", "", "", False),
+            (paths, " mode change 100644 => 100755", "", False), (paths, "", "// edited", False),
+        ):
+            candidate = dict(generated)
+            candidate[train.GRADLE] += script
+            def read(ref, path):
+                return (source if ref == "base" else candidate)[path]
+            with patch.object(train, "read_revision", side_effect=read), patch.object(train, "output", side_effect=[listing, summary]):
+                if valid:
+                    train.verify_release_branch("base", "head", "1.20.0", cutoff)
+                else:
+                    with self.assertRaises(ValueError):
+                        train.verify_release_branch("base", "head", "1.20.0", cutoff)
+
+    def test_behind_release_is_refreshed_and_must_pass_a_new_check(self):
+        pr = dict(number=41, isDraft=False, author={"login":"app/release"}, headRefOid="old", mergeStateStatus="BEHIND", statusCheckRollup=[])
+        with (patch.dict(os.environ, SALUT_RELEASE_APP_SLUG="release"),
+              patch.object(train, "read_revision", return_value='{"releasePeriod":"2026-12-10"}'),
+              patch.object(train, "output", side_effect=["old", "main", "base", "tree", "new"]) as git,
+              patch.object(train, "git_remote") as remote, patch.object(train, "verify_release_branch") as verify,
+              patch.object(train, "prepare_release_files", return_value=True), patch.object(train, "authorize_release"),
+              patch.object(train, "run") as run):
+            train.continue_release(pr, {}, "1.20.0", date(2026, 12, 10), "salut/release/v1.20.0")
+            verify.assert_called_once_with("base", "old", "1.20.0", date(2026, 12, 10))
+            self.assertIn(("tree", "-p", "old", "-p", "main"), [c.args[6:11] for c in git.call_args_list])
+            remote.assert_called_with("push", "origin", "new:refs/heads/salut/release/v1.20.0")
+            run.assert_called_once_with("git", "add", "--", str(train.CHANGELOG), str(train.GRADLE), str(train.IDENTITY))
+
+    def test_release_service_leaves_a_human_authored_pr_alone(self):
+        with patch.dict(os.environ, SALUT_RELEASE_APP_SLUG="release"), patch.object(train, "git_remote") as git:
+            with self.assertRaisesRegex(ValueError, "own pull requests"):
+                train.continue_release({"isDraft":False,"author":{"login":"owner"}}, {}, "1.20.0",
+                                       date(2026, 12, 10), "salut/release/v1.20.0")
+            git.assert_not_called()
 
     def test_merged_unpublished_release_dispatches_retry(self):
         with patch.object(train, "release_state", return_value="draft"), patch.object(train, "run") as run:
