@@ -16,12 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 class ReleaseTrainTest(unittest.TestCase):
     def test_full_intervals_cross_month_and_year_boundaries(self):
         for day, expected in {
-            "2026-12-08": None,
-            "2026-12-09": "2026-12-09",
-            "2026-12-22": "2026-12-09",
-            "2026-12-23": "2026-12-23",
-            "2027-01-05": "2026-12-23",
-            "2027-01-06": "2027-01-06",
+            "2026-11-25": None,
+            "2026-11-26": "2026-11-26",
+            "2026-12-09": "2026-11-26",
+            "2026-12-10": "2026-12-10",
+            "2026-12-24": "2026-12-24",
+            "2027-01-06": "2026-12-24",
+            "2027-01-07": "2027-01-07",
         }.items():
             with self.subTest(day=day):
                 result = train.period(date.fromisoformat(day))
@@ -31,7 +32,7 @@ class ReleaseTrainTest(unittest.TestCase):
         for content in ("", "### New\n<!--\n- Example\n-->\n", "```md\n- Example\n```\n"):
             with self.subTest(content=content):
                 changelog = f"## Unreleased\n\n{content}\n## 1.18.0\n\n- Older\n"
-                self.assertIsNone(train.roll_changelog(changelog, "1.18.1"))
+                self.assertIsNone(train.roll_changelog(changelog, "1.19.0", date(2026, 11, 26)))
 
     def test_preparation_updates_note_version_and_code_together(self):
         identity = {"versionName": "1.18.0", "versionCode": 11800}
@@ -46,16 +47,18 @@ class ReleaseTrainTest(unittest.TestCase):
                   patch.object(train, "output", side_effect=["", "boundary", changelog]),
                   patch.object(train, "run") as run,
                   patch.dict(os.environ, {"SALUT_RELEASE_PR_TOKEN": "test-token"})):
-                train.prepare(identity, date(2026, 12, 9))
+                train.prepare(identity, date(2026, 11, 26))
             self.assertEqual(json.loads(files["IDENTITY"].read_text(encoding="utf-8")), {
-                "versionName": "1.18.1", "versionCode": 11801, "releasePeriod": "2026-12-09",
+                "versionName": "1.19.0", "versionCode": 11900, "releasePeriod": "2026-11-26",
             })
             self.assertEqual(files["GRADLE"].read_text(encoding="utf-8"),
-                             'versionCode 11801\nversionName "1.18.1"\n')
-            self.assertEqual(update_manifest.parse_changelog(files["CHANGELOG"])["1.18.1"], ["New"])
-            notes = train.extract_release_notes(files["CHANGELOG"].read_text(encoding="utf-8"), "v1.18.1")
+                             'versionCode 11900\nversionName "1.19.0"\n')
+            self.assertEqual(update_manifest.parse_changelog(files["CHANGELOG"])["1.19.0"], ["New"])
+            changelog = files["CHANGELOG"].read_text(encoding="utf-8")
+            self.assertIn("## 1.19.0 - 2026-11-26\n", changelog)
+            notes = train.extract_release_notes(changelog, "v1.19.0")
             self.assertEqual(notes, "- **New** details.\n  Continued.\n")
-            git.assert_called_with("push", "origin", "HEAD:refs/heads/salut/release/v1.18.1")
+            git.assert_called_with("push", "origin", "HEAD:refs/heads/salut/release/v1.19.0")
             self.assertEqual(run.call_args.args[:3], ("gh", "pr", "create"))
 
     def test_empty_period_and_open_pull_request_do_not_write(self):
@@ -64,6 +67,17 @@ class ReleaseTrainTest(unittest.TestCase):
                   patch.object(train, "git_remote", return_value=""), patch.object(train, "run") as run):
                 train.prepare({"versionName": "1.18.0", "versionCode": 11800}, date(2026, 12, 9))
             run.assert_not_called()
+
+    def test_minor_release_resets_patch_and_checks_previous_android_code(self):
+        self.assertEqual(train.next_version({"versionName": "1.19.4", "versionCode": 11904}), "1.20.0")
+        with self.assertRaises(ValueError):
+            train.next_version({"versionName": "1.19.4", "versionCode": 11900})
+
+    def test_daily_check_skips_an_already_published_period(self):
+        identity = {"versionName": "1.19.0", "versionCode": 11900, "releasePeriod": "2026-11-26"}
+        with patch.object(train, "release_state", return_value="published"), patch.object(train, "output") as output:
+            train.prepare(identity, date(2026, 12, 9))
+            output.assert_not_called()
 
     def test_merged_unpublished_release_dispatches_retry(self):
         with patch.object(train, "release_state", return_value="draft"), patch.object(train, "run") as run:
