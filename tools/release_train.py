@@ -15,7 +15,7 @@ CHANGELOG = Path("CHANGELOG.md")
 GRADLE = Path("smarttubetv/build.gradle")
 DIST = Path("smarttubetv/build/outputs/renamed_apks/stmobileRelease")
 NOTES = Path("build/maintenance/release-notes.md")
-ANCHOR = date(2026, 11, 25)
+FIRST_RELEASE_PERIOD = date(2026, 11, 26)
 INTERVAL = timedelta(days=14)
 
 
@@ -33,17 +33,17 @@ def git_remote(*args):
 
 
 def period(today):
-    elapsed = (today - ANCHOR) // INTERVAL
-    return ANCHOR + elapsed * INTERVAL if elapsed >= 1 else None
+    elapsed = (today - FIRST_RELEASE_PERIOD) // INTERVAL
+    return FIRST_RELEASE_PERIOD + elapsed * INTERVAL if elapsed >= 0 else None
 
 
-def roll_changelog(changelog, version):
+def roll_changelog(changelog, version, release_date):
     heading = re.compile(r"^## Unreleased[ \t]*$", re.M)
     matches = list(heading.finditer(changelog))
     if len(matches) != 1:
         raise ValueError("Expected exactly one Unreleased heading")
     end = matches[0].end()
-    rolled = changelog[:end] + f"\n\n## {version}" + changelog[end:]
+    rolled = changelog[:end] + f"\n\n## {version} - {release_date.isoformat()}" + changelog[end:]
     try:
         body = extract_release_notes(rolled, f"v{version}")
     except ValueError as error:
@@ -57,9 +57,10 @@ def roll_changelog(changelog, version):
 
 
 def next_version(identity):
-    major, minor, patch = identity["versionName"].split(".")
-    version = f"{major}.{minor}.{int(patch) + 1}"
-    if version_code(version) != identity["versionCode"] + 1:
+    previous = identity["versionName"]
+    major, minor, _ = previous.split(".")
+    version = f"{major}.{int(minor) + 1}.0"
+    if version_code(previous) != identity["versionCode"] or version_code(version) <= identity["versionCode"]:
         raise ValueError("Release identity has inconsistent version numbers")
     return version
 
@@ -68,7 +69,7 @@ def bump_gradle(gradle, identity, version):
     previous = re.escape(identity["versionName"])
     pair = rf'(\bversionCode\s+){identity["versionCode"]}(\s+versionName\s+"){previous}(")'
     updated, count = re.subn(pair, lambda m: (
-        f"{m[1]}{identity['versionCode'] + 1}{m[2]}{version}{m[3]}"), gradle)
+        f"{m[1]}{version_code(version)}{m[2]}{version}{m[3]}"), gradle)
     if count != 1:
         raise ValueError("Expected exactly one matching Gradle release identity")
     return updated
@@ -84,6 +85,22 @@ def release_state(tag):
     return "missing"
 
 
+def prepare_release_files(identity, version, cutoff, today):
+    boundary = output("git", "rev-list", "--first-parent",
+                      f"--before={cutoff}T00:00:00Z", "-1", "HEAD")
+    if not boundary or not roll_changelog(output("git", "show", f"{boundary}:{CHANGELOG}"), version, today):
+        return False
+    rolled = roll_changelog(CHANGELOG.read_text(encoding="utf-8"), version, today)
+    if rolled is None:
+        return False
+    updated_gradle = bump_gradle(GRADLE.read_text(encoding="utf-8"), identity, version)
+    identity.update(versionName=version, versionCode=version_code(version), releasePeriod=str(cutoff))
+    CHANGELOG.write_text(rolled, encoding="utf-8", newline="\n")
+    GRADLE.write_text(updated_gradle, encoding="utf-8", newline="\n")
+    IDENTITY.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return True
+
+
 def prepare(identity, today):
     tag = "v" + identity["versionName"]
     if identity.get("releasePeriod") and release_state(tag) != "published":
@@ -93,7 +110,8 @@ def prepare(identity, today):
         return
 
     cutoff = period(today)
-    if cutoff is None or cutoff <= date.fromisoformat(identity.get("releasePeriod", str(ANCHOR))):
+    last_period = identity.get("releasePeriod")
+    if cutoff is None or (last_period and cutoff <= date.fromisoformat(last_period)):
         return
 
     version = next_version(identity)
@@ -107,19 +125,8 @@ def prepare(identity, today):
     ref = f"refs/heads/{branch}"
     has_branch = bool(git_remote("ls-remote", "--heads", "origin", ref))
     if not has_branch:
-        boundary = output("git", "rev-list", "--first-parent",
-                          f"--before={cutoff}T00:00:00Z", "-1", "HEAD")
-        if not boundary or not roll_changelog(output("git", "show", f"{boundary}:{CHANGELOG}"), version):
+        if not prepare_release_files(identity, version, cutoff, today):
             return
-        rolled = roll_changelog(CHANGELOG.read_text(encoding="utf-8"), version)
-        if rolled is None:
-            return
-        updated_gradle = bump_gradle(GRADLE.read_text(encoding="utf-8"), identity, version)
-        identity.update(versionName=version, versionCode=identity["versionCode"] + 1,
-                        releasePeriod=str(cutoff))
-        CHANGELOG.write_text(rolled, encoding="utf-8")
-        GRADLE.write_text(updated_gradle, encoding="utf-8")
-        IDENTITY.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8")
         run("git", "add", "--", str(CHANGELOG), str(GRADLE), str(IDENTITY))
         run("git", "-c", "user.name=Salut Release", "-c",
             "user.email=41898282+github-actions[bot]@users.noreply.github.com",
